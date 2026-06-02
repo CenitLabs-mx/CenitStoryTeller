@@ -1,28 +1,27 @@
 # novela-engine
 
-Framework agéntico para escribir novelas con canon coherente y control de calidad
-automático ("Prueba del Ácido"). El usuario orquesta; los subagentes generan y validan.
+Agentic framework for writing novels with a coherent canon and automated quality control ("Acid Test"). The user orchestrates; subagents generate and validate.
 
-## Arquitectura
-- **Motor de Historia** — convierte beats + canon en prosa, escena por escena.
-- **Continuidad & Prueba del Ácido** — valida coherencia y plausibilidad (física, psicológica, ambiental, química) antes de dar por buena una escena.
-- **Canon relacional** (EF Core): Personajes, Ubicaciones, Beats, Eventos, Capítulos.
-- **Trazabilidad**: cada generación queda como versión comparable + registro auditable.
-- **Proveedor LLM intercambiable**: OpenAI, Gemini o modelos locales (Ollama/Gemma).
+## Architecture
+- **Story Engine** — converts beats + canon into prose, scene by scene.
+- **Continuity & Acid Test** — validates coherence and plausibility (physical, psychological, environmental, chemical) before approving a scene.
+- **Relational Canon** (EF Core): Characters, Locations, Beats, Events, Chapters.
+- **Traceability**: every generation remains as a comparable version + auditable log.
+- **Interchangeable LLM Provider**: OpenAI, Gemini, or local models (Ollama/Gemma).
 
-## Arranque rápido
+## Quick Start
 
 ```bash
-git clone https://github.com/<tu-usuario>/novela-engine.git
+git clone https://github.com/<your-username>/novela-engine.git
 cd novela-engine
-cp .env.example .env        # rellena tu LLM_API_KEY
+cp .env.example .env        # fill in your LLM_API_KEY
 docker compose up --build
 ```
 
-Abre http://localhost:8080
+Open http://localhost:8080
 
-## Demo incluida: East Lynne (dominio público)
-En `examples/east-lynne/` está una novela del s. XIX modernizada con el flujo "moderniza": canon completo (personajes, beats, eventos) + 5 capítulos de muestra. Cárgala para ver el framework de punta a punta.
+## Included Demo: East Lynne (Public Domain)
+In `examples/east-lynne/` is a 19th-century novel modernized with the "modernize" workflow: full canon (characters, beats, events) + 5 sample chapters. Load it to see the framework end-to-end.
 
-## Licencia
-MIT — ver LICENSE.
+## License
+MIT — see LICENSE.

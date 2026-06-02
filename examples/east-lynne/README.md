@@ -1,15 +1,15 @@
 # Demo: East Lynne
 
-Este directorio contiene los datos de prueba iniciales basados en *East Lynne* (1861) de Ellen Wood, una novela del siglo XIX en el dominio público.
+This directory contains the initial test data based on *East Lynne* (1861) by Ellen Wood, a 19th-century public domain novel.
 
-## Estructura de Canon
+## Canon Structure
 
-- `canon/personajes/` — Archivos de lore y caracterización de personajes principales (Lady Isabel Vane, Archibald Carlyle, Francis Levison, etc.).
-- `canon/ubicaciones/` — Reglas físicas y sociales de locaciones clave (East Lynne, Londres, Grenoble).
-- `canon/beats/` — Hitos y arcos narrativos estructurados del plot principal.
-- `canon/eventos/` — Cronología histórica de hechos canónicos previos y durante la trama.
-- `capitulos/` — 5 capítulos de muestra escritos y validados con el flujo del framework.
+- `canon/personajes/` — Lore files and character sheets of the main characters (Lady Isabel Vane, Archibald Carlyle, Francis Levison, etc.).
+- `canon/ubicaciones/` — Physical and social rules of key locations (East Lynne, London, Grenoble).
+- `canon/beats/` — Milestones and structured narrative arcs of the main plot.
+- `canon/eventos/` — Historical timeline of prior and active canonical events.
+- `capitulos/` — 5 sample chapters written and validated with the framework flow.
 
-## Cómo Usar
+## How to Use
 
-El framework de novela-engine cargará esta demo automáticamente si se especifica en la configuración inicial, permitiendo auditar y probar el Motor de Historia y la Prueba del Ácido de punta a punta.
+The novela-engine framework will load this demo automatically if specified in the initial configuration, enabling end-to-end testing and auditing of the Story Engine and the Acid Test.
