@@ -1,5 +1,7 @@
 using NovelaEngine.Web.Components;
 using NovelaEngine.Core.Llm;
+using NovelaEngine.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,8 +10,16 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddNovelaLlm(builder.Configuration);
+builder.Services.AddNovelaData(builder.Configuration);
 
 var app = builder.Build();
+
+// Aplica migraciones pendientes al arrancar (cómodo para Docker).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<NovelaDbContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
