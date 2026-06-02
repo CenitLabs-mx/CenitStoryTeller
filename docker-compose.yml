@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: novela
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: novela
+    volumes:
+      - novela-data:/var/lib/postgresql/data   # contenido privado, fuera del repo
+
+volumes:
+  novela-data:

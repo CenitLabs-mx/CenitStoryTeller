@@ -1,0 +1,37 @@
+# Custom Ignores from Scaffold
+.env
+bin/
+obj/
+*.user
+/contenido-privado/
+novela-engine — Scaffold*.html
+
+# User-secrets and local settings
+secrets.json
+.env.local
+.env.*.local
+
+# .NET / Visual Studio ignores
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Build outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
