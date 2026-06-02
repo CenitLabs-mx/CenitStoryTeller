@@ -5,6 +5,7 @@ obj/
 *.user
 /contenido-privado/
 novela-engine — Scaffold*.html
+/guidedocs/
 
 # User-secrets and local settings
 secrets.json

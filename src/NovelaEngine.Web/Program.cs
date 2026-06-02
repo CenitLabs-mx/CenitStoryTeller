@@ -1,10 +1,13 @@
 using NovelaEngine.Web.Components;
+using NovelaEngine.Core.Llm;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddNovelaLlm(builder.Configuration);
 
 var app = builder.Build();
 
