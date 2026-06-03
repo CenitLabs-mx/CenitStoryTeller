@@ -79,7 +79,7 @@ public sealed class NovelaDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Titulo).HasMaxLength(300).IsRequired();
             e.HasIndex(x => new { x.ObraId, x.Orden });
-            e.HasMany(x => x.Versiones).WithOne().HasForeignKey(v => v.CapituloId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Versiones).WithOne(v => v.Capitulo).HasForeignKey(v => v.CapituloId).OnDelete(DeleteBehavior.Cascade);
 
             // Beat objetivo opcional: si se borra el beat, el capítulo queda sin referencia (no se borra).
             e.HasOne<Beat>().WithMany().HasForeignKey(x => x.BeatObjetivoId).OnDelete(DeleteBehavior.SetNull);

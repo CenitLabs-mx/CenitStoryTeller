@@ -9,6 +9,7 @@ internal static class AcidoParser
 {
     private sealed record Dto(
         bool fisica, bool psicologica, bool ambiental, bool quimica,
+        bool? anacronismo, bool? fidelidad_funcional,
         string? veredicto, string? hallazgos, string? parches);
 
     public static PruebaAcido Parse(string respuesta)
@@ -29,6 +30,8 @@ internal static class AcidoParser
             Psicologica = dto.psicologica,
             Ambiental = dto.ambiental,
             Quimica = dto.quimica,
+            Anacronismo = dto.anacronismo ?? false,
+            FidelidadFuncional = dto.fidelidad_funcional ?? true,
             Veredicto = Enum.TryParse<Veredicto>(dto.veredicto, ignoreCase: true, out var v)
                 ? v : Veredicto.Revisar,
             Hallazgos = dto.hallazgos ?? "",

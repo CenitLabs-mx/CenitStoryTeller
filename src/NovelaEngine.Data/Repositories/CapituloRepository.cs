@@ -70,6 +70,8 @@ public sealed class CapituloRepository : ICapituloRepository
         actual.Psicologica = prueba.Psicologica;
         actual.Ambiental = prueba.Ambiental;
         actual.Quimica = prueba.Quimica;
+        actual.Anacronismo = prueba.Anacronismo;
+        actual.FidelidadFuncional = prueba.FidelidadFuncional;
         actual.Veredicto = prueba.Veredicto;
         actual.Hallazgos = prueba.Hallazgos;
         actual.Parches = prueba.Parches;

@@ -124,6 +124,8 @@ public class PruebaAcido
     public bool Psicologica { get; set; }
     public bool Ambiental { get; set; }
     public bool Quimica { get; set; }
+    public bool Anacronismo { get; set; }
+    public bool FidelidadFuncional { get; set; }
     public Veredicto Veredicto { get; set; }
     public string? Hallazgos { get; set; }
     public string? Parches { get; set; }
