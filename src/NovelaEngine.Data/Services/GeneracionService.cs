@@ -9,14 +9,6 @@ using NovelaEngine.Data.Repositories;
 
 namespace NovelaEngine.Data.Services;
 
-public record ParametrosModernizacion(
-    string EpocaDestino,
-    string LugarCultura,
-    string Registro,
-    string PlataformaObjetivo,
-    string NivelFidelidad,
-    string Tono);
-
 public interface IGeneracionService
 {
     // Escribe un borrador del capítulo con ModelDraft y lo guarda como nueva versión.
@@ -25,8 +17,8 @@ public interface IGeneracionService
     // Corre la prueba del ácido sobre una versión con ModelReview y guarda el veredicto.
     Task<PruebaAcido> CorrerPruebaAcidoAsync(Guid capituloVersionId, CancellationToken ct = default);
 
-    // Moderniza el canon completo de la obra a partir de una obra clásica.
-    Task ModernizarCanonAsync(Guid obraId, ParametrosModernizacion parametros, CancellationToken ct = default);
+    // Moderniza el canon fuente de una obra de dominio publico y lo guarda como Borrador.
+    Task<Obra> ModernizarCanonAsync(Guid obraId, ParametrosModernizacion parametros, CancellationToken ct = default);
 }
 
 public sealed class GeneracionService : IGeneracionService
@@ -140,159 +132,125 @@ public sealed class GeneracionService : IGeneracionService
         return prueba;
     }
 
-    public async Task ModernizarCanonAsync(Guid obraId, ParametrosModernizacion p, CancellationToken ct = default)
+    private static TEnum ParseEnum<TEnum>(string? value) where TEnum : struct, Enum =>
+        Enum.TryParse<TEnum>(value, ignoreCase: true, out var r) ? r : default;
+
+    public async Task<Obra> ModernizarCanonAsync(
+        Guid obraId, ParametrosModernizacion p, CancellationToken ct = default)
     {
         var obra = await _obras.GetConCanonAsync(obraId, ct)
             ?? throw new InvalidOperationException($"No existe la obra {obraId}.");
 
-        var systemPrompt = await _prompts.ModernizarAsync(ct);
+        if (obra.Intake != IntakeTipo.DominioPublico)
+            throw new InvalidOperationException(
+                "ModernizarCanonAsync solo aplica a obras con Intake = Dominio publico.");
 
-        var sourceCanonBuilder = new System.Text.StringBuilder();
-        sourceCanonBuilder.AppendLine("PERSONAJES:");
-        foreach (var pj in obra.Personajes)
-        {
-            sourceCanonBuilder.AppendLine($"- Nombre: {pj.Nombre}, Rol: {pj.Rol}, Arquetipo: {pj.Arquetipo}, Herida Central: {pj.HeridaCentral}, Deseo: {pj.Deseo}, Necesidad: {pj.Necesidad}, Restricciones: {pj.Restricciones}, Estado en Trama: {pj.EstadoEnTrama}, Estado Vital: {pj.EstadoVital}");
-        }
-        sourceCanonBuilder.AppendLine("\nUBICACIONES:");
-        foreach (var ub in obra.Ubicaciones)
-        {
-            sourceCanonBuilder.AppendLine($"- Nombre: {ub.Nombre}, Tipo: {ub.Tipo}, Rol en Trama: {ub.RolEnTrama}, Estado Actual: {ub.EstadoActual}");
-        }
-        sourceCanonBuilder.AppendLine("\nBEATS:");
-        foreach (var bt in obra.Beats)
-        {
-            sourceCanonBuilder.AppendLine($"- Orden: {bt.Orden}, Título: {bt.Titulo}, Acto: {bt.Acto}, Función: {bt.Funcion}, Descripción: {bt.Descripcion}");
-        }
-        sourceCanonBuilder.AppendLine("\nEVENTOS:");
-        foreach (var ev in obra.Eventos)
-        {
-            sourceCanonBuilder.AppendLine($"- Orden: {ev.Orden}, Título: {ev.Titulo}, Acto: {ev.Acto}, Tipo: {ev.Tipo}, Momento In-World: {ev.MomentoInWorld}, Cambio/Consecuencia: {ev.CambioConsecuencia}");
-        }
-
-        var userMessage = $@"EPOCA DESTINO: {p.EpocaDestino}
-LUGAR/CULTURA: {p.LugarCultura}
-REGISTRO: {p.Registro}
-PLATAFORMA OBJETIVO: {p.PlataformaObjetivo}
-NIVEL FIDELIDAD: {p.NivelFidelidad}
-TONO: {p.Tono}
-
-CANON FUENTE:
-{sourceCanonBuilder.ToString()}";
+        // 1) Razonamiento con el modelo fuerte (es transposicion, no prosa).
+        var system = await _prompts.ModernizaAsync(ct);
+        var instruccion = ModernizaParser.InstruccionJson(p, CanonSerializer.ToTexto(obra));
 
         var resp = await _llm.CompleteAsync(new LlmRequest
         {
             Model = _opt.ModelReview,
-            Temperature = 0.2,
-            Messages = new[]
-            {
-                LlmMessage.System(systemPrompt),
-                LlmMessage.User(userMessage)
-            }
+            Temperature = 0.4,
+            Messages = new[] { LlmMessage.System(system), LlmMessage.User(instruccion) }
         }, ct);
 
-        var responseText = resp.Text;
-        var jsonStart = responseText.IndexOf('{');
-        var jsonEnd = responseText.LastIndexOf('}');
-        if (jsonStart >= 0 && jsonEnd > jsonStart)
+        var dto = ModernizaParser.Parse(resp.Text);
+
+        // 2) Personajes (Canon = Borrador).
+        var personajesPorNombre = new Dictionary<string, Personaje>(StringComparer.OrdinalIgnoreCase);
+        foreach (var d in dto.personajes ?? new())
         {
-            var jsonContent = responseText[jsonStart..(jsonEnd + 1)];
-            using var doc = JsonDocument.Parse(jsonContent);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("personajes", out var personajesProp) && personajesProp.ValueKind == JsonValueKind.Array)
+            var personaje = new Personaje
             {
-                foreach (var item in personajesProp.EnumerateArray())
-                 {
-                    var pj = new Personaje
-                    {
-                        Id = Guid.NewGuid(),
-                        ObraId = obraId,
-                        Canon = CanonNivel.Borrador,
-                        Nombre = item.GetProperty("nombre").GetString() ?? "",
-                        Rol = item.TryGetProperty("rol", out var r) ? r.GetString() : null,
-                        Arquetipo = item.TryGetProperty("arquetipo", out var aq) ? aq.GetString() : null,
-                        HeridaCentral = item.TryGetProperty("heridaCentral", out var hc) ? hc.GetString() : null,
-                        Deseo = item.TryGetProperty("deseo", out var d) ? d.GetString() : null,
-                        Necesidad = item.TryGetProperty("necesidad", out var n) ? n.GetString() : null,
-                        Restricciones = item.TryGetProperty("restricciones", out var re) ? re.GetString() : null,
-                        EstadoEnTrama = item.TryGetProperty("estadoEnTrama", out var et) ? et.GetString() : null,
-                        EstadoVital = EstadoVital.Vivo
-                    };
-                    obra.Personajes.Add(pj);
-                }
-            }
-
-            if (root.TryGetProperty("ubicaciones", out var ubicacionesProp) && ubicacionesProp.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in ubicacionesProp.EnumerateArray())
-                {
-                    var ub = new Ubicacion
-                    {
-                        Id = Guid.NewGuid(),
-                        ObraId = obraId,
-                        Canon = CanonNivel.Borrador,
-                        Nombre = item.GetProperty("nombre").GetString() ?? "",
-                        Tipo = item.TryGetProperty("tipo", out var t) ? t.GetString() : null,
-                        RolEnTrama = item.TryGetProperty("rolEnTrama", out var rt) ? rt.GetString() : null,
-                        EstadoActual = item.TryGetProperty("estadoActual", out var ea) ? ea.GetString() : null
-                    };
-                    obra.Ubicaciones.Add(ub);
-                }
-            }
-
-            if (root.TryGetProperty("beats", out var beatsProp) && beatsProp.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in beatsProp.EnumerateArray())
-                {
-                    var bt = new Beat
-                    {
-                        Id = Guid.NewGuid(),
-                        ObraId = obraId,
-                        Estado = BeatEstado.Pendiente,
-                        Titulo = item.GetProperty("titulo").GetString() ?? "",
-                        Orden = item.GetProperty("orden").GetInt32(),
-                        Acto = item.TryGetProperty("acto", out var act) && Enum.TryParse<Acto>(act.GetString(), true, out var aVal) ? aVal : Acto.Setup,
-                        Funcion = item.TryGetProperty("funcion", out var func) && Enum.TryParse<FuncionNarrativa>(func.GetString(), true, out var fVal) ? fVal : FuncionNarrativa.Setup,
-                        Descripcion = item.TryGetProperty("descripcion", out var desc) ? desc.GetString() : null
-                    };
-                    obra.Beats.Add(bt);
-                }
-            }
-
-            if (root.TryGetProperty("eventos", out var eventosProp) && eventosProp.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in eventosProp.EnumerateArray())
-                {
-                    var ev = new Evento
-                    {
-                        Id = Guid.NewGuid(),
-                        ObraId = obraId,
-                        Tipo = EventoTipo.Borrador,
-                        Titulo = item.GetProperty("titulo").GetString() ?? "",
-                        Orden = item.GetProperty("orden").GetInt32(),
-                        Acto = item.TryGetProperty("acto", out var act) && Enum.TryParse<Acto>(act.GetString(), true, out var aVal) ? aVal : Acto.Setup,
-                        MomentoInWorld = item.TryGetProperty("momentoInWorld", out var miw) ? miw.GetString() : null,
-                        CambioConsecuencia = item.TryGetProperty("cambioConsecuencia", out var cc) ? cc.GetString() : null
-                    };
-                    obra.Eventos.Add(ev);
-                }
-            }
-        }
-        else
-        {
-            throw new FormatException("La respuesta del modernizador no contiene un JSON válido.");
+                Id = Guid.NewGuid(),
+                ObraId = obra.Id,
+                Nombre = d.nombre,
+                Rol = d.rol ?? "",
+                Arquetipo = d.arquetipo ?? "",
+                HeridaCentral = d.heridaCentral ?? "",
+                Deseo = d.deseo ?? "",
+                Necesidad = d.necesidad ?? "",
+                EstadoEnTrama = d.estadoEnTrama ?? "",
+                EstadoVital = ParseEnum<EstadoVital>(d.estadoVital),
+                Canon = CanonNivel.Borrador
+            };
+            obra.Personajes.Add(personaje);
+            personajesPorNombre[personaje.Nombre] = personaje;
         }
 
+        // 3) Ubicaciones (Canon = Borrador).
+        var ubicacionesPorNombre = new Dictionary<string, Ubicacion>(StringComparer.OrdinalIgnoreCase);
+        foreach (var d in dto.ubicaciones ?? new())
+        {
+            var ubicacion = new Ubicacion
+            {
+                Id = Guid.NewGuid(),
+                ObraId = obra.Id,
+                Nombre = d.nombre,
+                Tipo = d.tipo ?? "",
+                RolEnTrama = d.rolEnTrama ?? "",
+                EstadoActual = d.estadoActual ?? "",
+                Canon = CanonNivel.Borrador
+            };
+            obra.Ubicaciones.Add(ubicacion);
+            ubicacionesPorNombre[ubicacion.Nombre] = ubicacion;
+        }
+
+        // 4) Beats.
+        foreach (var d in dto.beats ?? new())
+        {
+            obra.Beats.Add(new Beat
+            {
+                Id = Guid.NewGuid(),
+                ObraId = obra.Id,
+                Titulo = d.titulo,
+                Orden = d.orden,
+                Acto = ParseEnum<Acto>(d.acto),
+                Funcion = ParseEnum<FuncionNarrativa>(d.funcionNarrativa),
+                Descripcion = d.descripcion ?? "",
+                Estado = BeatEstado.Pendiente
+            });
+        }
+
+        // 5) Eventos (resuelve las relaciones N:N por nombre contra lo recien creado).
+        foreach (var d in dto.eventos ?? new())
+        {
+            var evento = new Evento
+            {
+                Id = Guid.NewGuid(),
+                ObraId = obra.Id,
+                Titulo = d.titulo,
+                Orden = d.orden,
+                Acto = ParseEnum<Acto>(d.acto),
+                Tipo = ParseEnum<EventoTipo>(d.tipo),
+                MomentoInWorld = d.momento ?? "",
+                CambioConsecuencia = d.cambioEstado ?? ""
+            };
+            foreach (var n in d.personajes ?? new())
+                if (personajesPorNombre.TryGetValue(n, out var per)) evento.Personajes.Add(per);
+            foreach (var n in d.ubicaciones ?? new())
+                if (ubicacionesPorNombre.TryGetValue(n, out var ub)) evento.Ubicaciones.Add(ub);
+            obra.Eventos.Add(evento);
+        }
+
+        // 6) Rastro auditable (guarda la salida integra del modelo en CanonSnapshot).
         await _pasos.AppendAsync(new RegistroPaso
         {
             Id = Guid.NewGuid(),
-            ObraId = obraId,
+            ObraId = obra.Id,
             Agente = "Moderniza",
-            Accion = "Modernización completa del canon",
-            Cambios = $"Canon modernizado generado con {resp.Model} para la época {p.EpocaDestino}.",
+            Accion = $"Modernizacion del canon a {p.EpocaDestino} ({p.Registro})",
+            CanonSnapshot = resp.Text,
+            Cambios = $"+{(dto.personajes?.Count ?? 0)} personajes, " +
+                      $"+{(dto.ubicaciones?.Count ?? 0)} ubicaciones, " +
+                      $"+{(dto.beats?.Count ?? 0)} beats, " +
+                      $"+{(dto.eventos?.Count ?? 0)} eventos (Canon=Borrador).",
             Timestamp = DateTimeOffset.UtcNow
         }, ct);
 
         await _uow.SaveChangesAsync(ct);
+        return obra;
     }
 }

@@ -9,7 +9,7 @@ public interface IPromptProvider
 {
     Task<string> MotorDeHistoriaAsync(CancellationToken ct = default);
     Task<string> ContinuidadAcidoAsync(CancellationToken ct = default);
-    Task<string> ModernizarAsync(CancellationToken ct = default);
+    Task<string> ModernizaAsync(CancellationToken ct = default);
 }
 
 // Lee los system-prompts versionados en el repo (carpeta prompts/).
@@ -25,6 +25,6 @@ public sealed class FilePromptProvider : IPromptProvider
     public Task<string> ContinuidadAcidoAsync(CancellationToken ct = default) =>
         File.ReadAllTextAsync(Path.Combine(_baseDir, "continuidad-acido.md"), ct);
 
-    public Task<string> ModernizarAsync(CancellationToken ct = default) =>
+    public Task<string> ModernizaAsync(CancellationToken ct = default) =>
         File.ReadAllTextAsync(Path.Combine(_baseDir, "moderniza.md"), ct);
 }
