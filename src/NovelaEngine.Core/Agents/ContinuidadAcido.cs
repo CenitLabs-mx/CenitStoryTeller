@@ -50,7 +50,7 @@ public class ContinuidadAcido
         }
 
         bool todoPasa = fisicaOk && psicologicaOk && ambientalOk && quimicaOk;
-        Veredicto veredicto = todoPasa ? Veredicto.Aprobada : (hallazgos.Count > 0 && parches.Count > 0 ? Veredicto.AprobadaConParches : Veredicto.Rechazada);
+        Veredicto veredicto = todoPasa ? Veredicto.Aprobado : (hallazgos.Count > 0 && parches.Count > 0 ? Veredicto.Revisar : Veredicto.Rechazado);
 
         return new PruebaAcido
         {

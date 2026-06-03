@@ -13,7 +13,7 @@ public enum FuncionNarrativa { Setup, Detonante, Giro, PuntoMedio, Crisis, Clima
 public enum BeatEstado { Pendiente, Escrito, Validado }
 public enum EventoTipo { Canonico, Borrador, Backstory }
 public enum CapituloEstado { Esquema, Borrador, Edicion, Publicado }
-public enum Veredicto { Aprobada, AprobadaConParches, Rechazada }
+public enum Veredicto { Aprobado, Revisar, Rechazado }
 
 // ---------- Núcleo ----------
 public class Obra
@@ -106,6 +106,7 @@ public class CapituloVersion
 {
     public Guid Id { get; set; }
     public Guid CapituloId { get; set; }
+    public Capitulo? Capitulo { get; set; }
     public int NumeroVersion { get; set; }      // v1, v2, ... para comparativa
     public string Modelo { get; set; } = "";     // ej. gpt-4o-mini, gemini-1.5, gemma-local
     public string PromptUsado { get; set; } = "";

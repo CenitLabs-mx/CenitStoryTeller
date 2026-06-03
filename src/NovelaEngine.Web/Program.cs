@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddNovelaLlm(builder.Configuration);
 builder.Services.AddNovelaData(builder.Configuration);
+builder.Services.AddNovelaRepositories();
 
 var app = builder.Build();
 
