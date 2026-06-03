@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace NovelaEngine.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddModernizationChecksToPruebaAcido : Migration
+    public partial class AddChecksModernizacion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,7 @@ namespace NovelaEngine.Data.Migrations
                 table: "PruebasAcido",
                 type: "boolean",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
         }
 
         /// <inheritdoc />

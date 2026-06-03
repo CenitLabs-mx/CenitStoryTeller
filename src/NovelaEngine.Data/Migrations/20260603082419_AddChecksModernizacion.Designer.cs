@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NovelaEngine.Data.Migrations
 {
     [DbContext(typeof(NovelaDbContext))]
-    [Migration("20260603024359_AddModernizationChecksToPruebaAcido")]
-    partial class AddModernizationChecksToPruebaAcido
+    [Migration("20260603082419_AddChecksModernizacion")]
+    partial class AddChecksModernizacion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
