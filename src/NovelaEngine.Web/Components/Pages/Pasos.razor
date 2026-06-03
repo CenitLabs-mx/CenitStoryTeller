@@ -1,0 +1,44 @@
+@page "/obras/{ObraId:guid}/pasos"
+@inject IRegistroPasoRepository RegistroPasoRepo
+
+<PageTitle>Bitácora de la obra</PageTitle>
+
+<h1>Bitácora de pasos</h1>
+
+@if (_pasos is null)
+{
+    <p><em>Cargando…</em></p>
+}
+else if (_pasos.Count == 0)
+{
+    <p>No hay pasos registrados todavía.</p>
+}
+else
+{
+    <ul class="timeline">
+        @foreach (var p in _pasos)
+        {
+            <li class="paso">
+                <div class="paso-head">
+                    <span class="agente">@p.Agente</span>
+                    <time>@p.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time>
+                </div>
+                <div class="accion">@p.Accion</div>
+                @if (!string.IsNullOrWhiteSpace(p.Cambios))
+                {
+                    <div class="cambios">@p.Cambios</div>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public Guid ObraId { get; set; }
+    private List<RegistroPaso>? _pasos;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _pasos = await RegistroPasoRepo.ListPorObraAsync(ObraId);
+    }
+}

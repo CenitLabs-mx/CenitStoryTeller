@@ -11,7 +11,7 @@ namespace NovelaEngine.Data.Repositories;
 public interface IRegistroPasoRepository
 {
     Task AppendAsync(RegistroPaso paso, CancellationToken ct = default);
-    Task<IReadOnlyList<RegistroPaso>> ListPorObraAsync(Guid obraId, CancellationToken ct = default);
+    Task<List<RegistroPaso>> ListPorObraAsync(Guid obraId, CancellationToken ct = default);
 }
 
 public sealed class RegistroPasoRepository : IRegistroPasoRepository
@@ -22,10 +22,9 @@ public sealed class RegistroPasoRepository : IRegistroPasoRepository
     public async Task AppendAsync(RegistroPaso paso, CancellationToken ct = default) =>
         await _db.RegistrosPaso.AddAsync(paso, ct);
 
-    public async Task<IReadOnlyList<RegistroPaso>> ListPorObraAsync(Guid obraId, CancellationToken ct = default) =>
-        await _db.RegistrosPaso
-            .AsNoTracking()
+    public Task<List<RegistroPaso>> ListPorObraAsync(Guid obraId, CancellationToken ct = default) =>
+        _db.RegistrosPaso
             .Where(p => p.ObraId == obraId)
-            .OrderBy(p => p.Timestamp)
+            .OrderByDescending(p => p.Timestamp)
             .ToListAsync(ct);
 }

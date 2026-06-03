@@ -1,15 +1,20 @@
-# Demo: East Lynne
+# East Lynne — modernization example
 
-This directory contains the initial test data based on *East Lynne* (1861) by Ellen Wood, a 19th-century public domain novel.
+Sample dataset for **novela-engine**: a public domain work (*East Lynne*, Ellen Wood, 1861) modernized to a juvenile/colloquial tone (Wattpad) using the MODERNIZA sub-agent. **Adaptation, not translation.**
 
-## Canon Structure
+Original source (public domain): Project Gutenberg #3322.
 
-- `canon/personajes/` — Lore files and character sheets of the main characters (Lady Isabel Vane, Archibald Carlyle, Francis Levison, etc.).
-- `canon/ubicaciones/` — Physical and social rules of key locations (East Lynne, London, Grenoble).
-- `canon/beats/` — Milestones and structured narrative arcs of the main plot.
-- `canon/eventos/` — Historical timeline of prior and active canonical events.
-- `capitulos/` — 5 sample chapters written and validated with the framework flow.
+## Structure
+- `canon/personajes.md` — 6 characters (Canon = Canonical).
+- `canon/ubicaciones.md` — 3 locations.
+- `canon/beats.md` — 9 beats (complete dramatic structure).
+- `canon/eventos.md` — 8 events (timeline, including backstory).
+- `capitulos/cap-01.md` — sample chapter (flagship of the moderniza flow).
 
-## How to Use
-
-The novela-engine framework will load this demo automatically if specified in the initial configuration, enabling end-to-end testing and auditing of the Story Engine and the Acid Test.
+## Modernization map (summary)
+| Original (1861) | Modern |
+|---|---|
+| Victorian disgrace | Public exposure / cancellation |
+| Class honor | Digital reputation + self-esteem |
+| Letters and carriages | Messages/DMs and cars |
+| East Lynne Mansion | Inherited house as a symbol of lost status |

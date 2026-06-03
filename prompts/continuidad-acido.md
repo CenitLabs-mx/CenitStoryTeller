@@ -17,6 +17,8 @@ Evaluate each scene against the filters and check each box (set to true in JSON)
 - Chemical — does the relationship feel earned? Mark as forced any romance/alliance/rivalry without prior build-up or that is too cheesy.
 
 ### Additional Checks for Modernized Plots (Public Domain Works)
+**Applicability:** These two checks apply ONLY when the work is a modernization of a public-domain source (Obra.Intake = "Dominio público"). For original or non-modernized stories they are Not Applicable — report them as passing ("anacronismo": false, "fidelidad_funcional": true) and do NOT let them influence the verdict. Never invent an anachronism finding for a story that was not modernized.
+
 - Anachronism — Has any period element from the original work survived without transposition? Is there an incoherent mixture of epochs? (In the JSON output, set "anacronismo" to false if there are no anachronisms, i.e., it passes, and true if anachronism issues are found).
 - Functional Fidelity — Does each modernized beat/event preserve its dramatic function in the modern version (even if details change)? (In the JSON output, set "fidelidad_funcional" to true if it passes, and false if it fails).
 

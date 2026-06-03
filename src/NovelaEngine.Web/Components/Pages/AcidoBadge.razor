@@ -1,0 +1,6 @@
+<span class="badge @(Ok ? "ok" : "fail")">@(Ok ? "✓" : "✗") @Label</span>
+
+@code {
+    [Parameter] public bool Ok { get; set; }
+    [Parameter] public string Label { get; set; } = "";
+}

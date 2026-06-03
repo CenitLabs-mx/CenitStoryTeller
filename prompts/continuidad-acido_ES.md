@@ -17,6 +17,8 @@ Evalúa cada escena contra los filtros y marca cada casilla (establece a true en
 - Química — ¿la relación se siente ganada? Marca como forzado todo romance/alianza/rivalidad sin construcción previa o demasiado cursi.
 
 ### Verificaciones Adicionales para Modernización (Obras de Dominio Público)
+**Aplicabilidad:** Estas dos verificaciones aplican ÚNICAMENTE cuando la obra es una modernización de una fuente de dominio público (Obra.Intake = "Dominio público"). Para historias originales o no modernizadas, estas no son aplicables; repórtalas como aprobadas ("anacronismo": false, "fidelidad_funcional": true) y NO dejes que influyan en el veredicto. Nunca inventes un hallazgo de anacronismo para una historia que no fue modernizada.
+
 - Anacronismo — ¿Sobrevivió algún elemento de la época original sin transponer? ¿Hay una mezcla incoherente de épocas? (En el JSON de salida, establece "anacronismo" a false si no hay problemas de anacronismo, es decir, pasa; y true si se encuentran problemas).
 - Fidelidad Funcional — ¿Cada beat/evento modernizado conserva su función dramática en la versión moderna (aunque cambie el detalle)? (En el JSON de salida, establece "fidelidad_funcional" a true si pasa; y false si falla).
 

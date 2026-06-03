@@ -1,15 +1,22 @@
-# Demo: East Lynne
+# East Lynne — ejemplo de modernización
 
-Este directorio contiene los datos de prueba iniciales basados en *East Lynne* (1861) de Ellen Wood, una novela del siglo XIX en el dominio público.
+Dataset de ejemplo para **novela-engine**: una obra de dominio público
+(*East Lynne*, Ellen Wood, 1861) modernizada a registro juvenil/coloquial
+(Wattpad) mediante el sub-agente MODERNIZA. **Adaptación, no traducción.**
 
-## Estructura de Canon
+Fuente original (dominio público): Project Gutenberg #3322.
 
-- `canon/personajes/` — Archivos de lore y caracterización de personajes principales (Lady Isabel Vane, Archibald Carlyle, Francis Levison, etc.).
-- `canon/ubicaciones/` — Reglas físicas y sociales de locaciones clave (East Lynne, Londres, Grenoble).
-- `canon/beats/` — Hitos y arcos narrativos estructurados del plot principal.
-- `canon/eventos/` — Cronología histórica de hechos canónicos previos y durante la trama.
-- `capitulos/` — 5 capítulos de muestra escritos y validados con el flujo del framework.
+## Estructura
+- `canon/personajes.md` — 6 personajes (Canon = Canónico).
+- `canon/ubicaciones.md` — 3 ubicaciones.
+- `canon/beats.md` — 9 beats (estructura dramática completa).
+- `canon/eventos.md` — 8 eventos (timeline, incl. backstory).
+- `capitulos/cap-01.md` — capítulo de ejemplo (flagship del flujo moderniza).
 
-## Cómo Usar
-
-El framework de novela-engine cargará esta demo automáticamente si se especifica en la configuración inicial, permitiendo auditar y probar el Motor de Historia y la Prueba del Ácido de punta a punta.
+## Mapa de modernización (resumen)
+| Original (1861) | Moderno |
+|---|---|
+| Deshonra victoriana | Exposición pública / cancelación |
+| Honor de clase | Reputación digital + autoestima |
+| Cartas y carruajes | Mensajes/DMs y coches |
+| Mansión East Lynne | Casa heredada como símbolo del estatus perdido |

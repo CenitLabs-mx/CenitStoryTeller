@@ -1,0 +1,50 @@
+@if (Version is null)
+{
+    <div class="panel vacio"><em>Selecciona una versión.</em></div>
+}
+else
+{
+    <div class="panel">
+        <header class="panel-head">
+            <strong>v@(Version.NumeroVersion)</strong>
+            <span class="modelo">@Version.Modelo</span>
+            @if (Version.EsFinal)
+            {
+                <span class="final">FINAL</span>
+            }
+            <time>@Version.CreadoEn.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time>
+        </header>
+
+        @if (Version.Acido is { } a)
+        {
+            <div class="acido">
+                <AcidoBadge Ok="a.Fisica" Label="Física" />
+                <AcidoBadge Ok="a.Psicologica" Label="Psicológica" />
+                <AcidoBadge Ok="a.Ambiental" Label="Ambiental" />
+                <AcidoBadge Ok="a.Quimica" Label="Química" />
+                @* Anacronismo pasa cuando es false (sin anacronismos) *@
+                <AcidoBadge Ok="!a.Anacronismo" Label="Anacronismo" />
+                <AcidoBadge Ok="a.FidelidadFuncional" Label="Fidelidad funcional" />
+                <span class="veredicto v-@a.Veredicto">@a.Veredicto</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(a.Hallazgos))
+            {
+                <details><summary>Hallazgos</summary><p>@a.Hallazgos</p></details>
+            }
+            @if (!string.IsNullOrWhiteSpace(a.Parches))
+            {
+                <details><summary>Parches</summary><p>@a.Parches</p></details>
+            }
+        }
+        else
+        {
+            <div class="acido sin">Sin Prueba del Ácido en esta versión.</div>
+        }
+
+        <pre class="texto">@Version.Texto</pre>
+    </div>
+}
+
+@code {
+    [Parameter] public CapituloVersion? Version { get; set; }
+}

@@ -1,0 +1,57 @@
+@page "/capitulos/{CapituloId:guid}/versiones"
+@inject ICapituloRepository Capitulos
+
+<PageTitle>Versiones del capítulo</PageTitle>
+
+@if (_capitulo is null)
+{
+    <p><em>Cargando…</em></p>
+}
+else
+{
+    <h1>@_capitulo.Titulo</h1>
+
+    <div class="selector">
+        <label>Izquierda:
+            <select @bind="_izqId">
+                @foreach (var v in _versiones)
+                {
+                    <option value="@v.Id">v@(v.NumeroVersion) · @v.Modelo @(v.EsFinal ? "★" : "")</option>
+                }
+            </select>
+        </label>
+        <label>Derecha:
+            <select @bind="_derId">
+                @foreach (var v in _versiones)
+                {
+                    <option value="@v.Id">v@(v.NumeroVersion) · @v.Modelo @(v.EsFinal ? "★" : "")</option>
+                }
+            </select>
+        </label>
+    </div>
+
+    <div class="comparador">
+        <VersionPanel Version="Izq" />
+        <VersionPanel Version="Der" />
+    </div>
+}
+
+@code {
+    [Parameter] public Guid CapituloId { get; set; }
+    private Capitulo? _capitulo;
+    private List<CapituloVersion> _versiones = new();
+    private Guid _izqId, _derId;
+
+    private CapituloVersion? Izq => _versiones.FirstOrDefault(v => v.Id == _izqId);
+    private CapituloVersion? Der => _versiones.FirstOrDefault(v => v.Id == _derId);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _capitulo = await Capitulos.GetConVersionesAsync(CapituloId);
+        _versiones = _capitulo?.Versiones.OrderBy(v => v.NumeroVersion).ToList() ?? new();
+
+        // Por defecto: comparar la penúltima con la última (o la única que haya).
+        _derId = _versiones.LastOrDefault()?.Id ?? Guid.Empty;
+        _izqId = (_versiones.Count > 1 ? _versiones[^2] : _versiones.LastOrDefault())?.Id ?? Guid.Empty;
+    }
+}
