@@ -1,7 +1,82 @@
-﻿@page "/"
+@page "/"
+@inject IObraRepository Obras
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Novela Engine</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Novela Engine</h1>
+<p class="text-muted">
+    Taller de obras. Entra a la bitácora de una obra o a las versiones de un capítulo
+    para revisar la Prueba del Ácido.
+</p>
 
-Welcome to your new app.
+@if (_obras is null)
+{
+    <p><em>Cargando…</em></p>
+}
+else if (_obras.Count == 0)
+{
+    <div class="alert alert-info">
+        No hay obras todavía. Corre el seeder de ejemplo para cargar
+        <strong>East Lynne</strong> (ver <code>EastLynneSeeder</code>).
+    </div>
+}
+else
+{
+    @foreach (var v in _obras)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h4 card-title">@v.Obra.Titulo</h2>
+                <p class="card-subtitle mb-2 text-muted">
+                    @(v.Obra.Medio ?? "—") · @v.Obra.Estado · Intake: @v.Obra.Intake
+                </p>
+                @if (!string.IsNullOrWhiteSpace(v.Obra.Logline))
+                {
+                    <p>@v.Obra.Logline</p>
+                }
+                <p>
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="/obras/@(v.Obra.Id)/pasos">Bitácora</a>
+                </p>
+                @if (v.Capitulos.Count == 0)
+                {
+                    <p><em>Sin capítulos.</em></p>
+                }
+                else
+                {
+                    <ul class="list-unstyled">
+                        @foreach (var c in v.Capitulos)
+                        {
+                            <li>
+                                <a href="/capitulos/@(c.Id)/versiones">@c.Orden. @c.Titulo</a>
+                                <span class="text-muted"> — @c.Estado</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<ObraVista>? _obras;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var lista = await Obras.ListAsync();
+        var vistas = new List<ObraVista>();
+        foreach (var o in lista)
+        {
+            var conCanon = await Obras.GetConCanonAsync(o.Id);
+            var obra = conCanon ?? o;
+            var caps = (conCanon?.Capitulos ?? new List<Capitulo>())
+                .OrderBy(c => c.Orden)
+                .ToList();
+            vistas.Add(new ObraVista(obra, caps));
+        }
+        _obras = vistas;
+    }
+
+    private sealed record ObraVista(Obra Obra, List<Capitulo> Capitulos);
+}

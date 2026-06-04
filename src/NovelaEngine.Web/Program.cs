@@ -2,6 +2,7 @@ using NovelaEngine.Web.Components;
 using NovelaEngine.Core.Llm;
 using NovelaEngine.Core.AcidTests;
 using NovelaEngine.Data;
+using NovelaEngine.Data.Seeding;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<NovelaDbContext>();
     db.Database.Migrate();
+
+    // Carga el ejemplo de dominio público si la BD está vacía (idempotente).
+    await EastLynneSeeder.SeedAsync(db);
 }
 
 // Configure the HTTP request pipeline.

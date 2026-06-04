@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using NovelaEngine.Core.Llm;
+using NovelaEngine.Core.AcidTests;
 using NovelaEngine.Data.Entities;
 using NovelaEngine.Data.Repositories;
 
@@ -30,6 +33,7 @@ public sealed class GeneracionService : IGeneracionService
     private readonly IObraRepository _obras;
     private readonly IRegistroPasoRepository _pasos;
     private readonly IUnitOfWork _uow;
+    private readonly IAcidTestRunner _acidTests;   // NUEVO
 
     public GeneracionService(
         ILlmClient llm,
@@ -38,7 +42,8 @@ public sealed class GeneracionService : IGeneracionService
         ICapituloRepository capitulos,
         IObraRepository obras,
         IRegistroPasoRepository pasos,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IAcidTestRunner acidTests)   // NUEVO
     {
         _llm = llm;
         _opt = opt.Value;
@@ -47,6 +52,7 @@ public sealed class GeneracionService : IGeneracionService
         _obras = obras;
         _pasos = pasos;
         _uow = uow;
+        _acidTests = acidTests;   // NUEVO
     }
 
     public async Task<CapituloVersion> GenerarBorradorAsync(
@@ -101,10 +107,11 @@ public sealed class GeneracionService : IGeneracionService
         var version = await _capitulos.GetVersionAsync(capituloVersionId, ct)
             ?? throw new InvalidOperationException($"No existe la versión {capituloVersionId}.");
 
+        // 1) Chequeo holístico: un solo prompt con el modelo fuerte da el veredicto global.
         var system = await _prompts.ContinuidadAcidoAsync(ct);
         var resp = await _llm.CompleteAsync(new LlmRequest
         {
-            Model = _opt.ModelReview,         // validación con modelo fuerte
+            Model = _opt.ModelReview,
             Temperature = 0.2,
             Messages = new[]
             {
@@ -116,6 +123,21 @@ public sealed class GeneracionService : IGeneracionService
         var prueba = AcidoParser.Parse(resp.Text);
         prueba.Id = Guid.NewGuid();
         prueba.CapituloVersionId = version.Id;
+
+        // 2) Si el veredicto pide revisión, localizamos dimensión por dimensión con los
+        //    4 AcidTests basados en LLM y enriquecemos hallazgos/parches.
+        var localizadas = 0;
+        if (prueba.Veredicto != Veredicto.Aprobado)
+        {
+            var ctx = await ConstruirAcidContextAsync(version, ct);
+            if (ctx is not null)
+            {
+                var resultados = await _acidTests.EjecutarAsync(ctx, ct);
+                FusionarDimensiones(prueba, resultados);
+                localizadas = resultados.Count;
+            }
+        }
+
         await _capitulos.GuardarPruebaAcidoAsync(prueba, ct);
 
         await _pasos.AppendAsync(new RegistroPaso
@@ -124,12 +146,74 @@ public sealed class GeneracionService : IGeneracionService
             ObraId = version.Capitulo!.ObraId,
             Agente = "Continuidad y Prueba del Ácido",
             Accion = $"Prueba del ácido sobre versión {version.Id}",
-            Cambios = $"Veredicto: {prueba.Veredicto}.",
+            Cambios = localizadas > 0
+                ? $"Veredicto: {prueba.Veredicto} (con {localizadas} dimensiones localizadas)."
+                : $"Veredicto: {prueba.Veredicto}.",
             Timestamp = DateTimeOffset.UtcNow
         }, ct);
 
         await _uow.SaveChangesAsync(ct);
         return prueba;
+    }
+
+    // Arma el contexto para los AcidTests dimensionales a partir del canon de la obra.
+    // El entity Capitulo no modela presencia ni eventos previos: pasamos el canon
+    // disponible y cada test localiza sus hallazgos contra la prosa propuesta.
+    private async Task<AcidContext?> ConstruirAcidContextAsync(
+        CapituloVersion version, CancellationToken ct)
+    {
+        var obraId = version.Capitulo?.ObraId ?? Guid.Empty;
+        if (obraId == Guid.Empty) return null;
+
+        var obra = await _obras.GetConCanonAsync(obraId, ct);
+        if (obra is null) return null;
+
+        var capitulo = obra.Capitulos.FirstOrDefault(c => c.Id == version.CapituloId)
+                       ?? version.Capitulo!;
+
+        var presentes = obra.Personajes.OrderBy(p => p.Nombre).ToList();
+        var ubicacion = obra.Ubicaciones.OrderBy(u => u.Nombre).FirstOrDefault();
+        var eventosPrevios = obra.Eventos.OrderBy(e => e.Orden).ToList();
+
+        // Sin al menos un personaje y una ubicación no hay nada que localizar.
+        if (presentes.Count == 0 || ubicacion is null) return null;
+
+        return new AcidContext(capitulo, version.Texto, presentes, ubicacion, eventosPrevios);
+    }
+
+    // Vuelca los resultados por dimensión sobre la PruebaAcido holística:
+    // actualiza los flags y concatena hallazgos/parches etiquetados.
+    private static void FusionarDimensiones(
+        PruebaAcido prueba, IReadOnlyList<DimensionResultado> dimensiones)
+    {
+        var hallazgos = new List<string>();
+        var parches = new List<string>();
+
+        foreach (var d in dimensiones)
+        {
+            var dim = d.Dimension.ToLowerInvariant();
+            if (dim.StartsWith("fís") || dim.StartsWith("fis")) prueba.Fisica = d.Resultado.Pasa;
+            else if (dim.StartsWith("psic") || dim.StartsWith("psí")) prueba.Psicologica = d.Resultado.Pasa;
+            else if (dim.StartsWith("amb")) prueba.Ambiental = d.Resultado.Pasa;
+            else if (dim.StartsWith("quí") || dim.StartsWith("qui")) prueba.Quimica = d.Resultado.Pasa;
+
+            if (d.Resultado.Pasa) continue;
+            if (!string.IsNullOrWhiteSpace(d.Resultado.Hallazgo))
+                hallazgos.Add($"[{d.Dimension}] {d.Resultado.Hallazgo}");
+            if (!string.IsNullOrWhiteSpace(d.Resultado.Parche))
+                parches.Add($"[{d.Dimension}] {d.Resultado.Parche}");
+        }
+
+        if (hallazgos.Count > 0) prueba.Hallazgos = Combinar(prueba.Hallazgos, hallazgos);
+        if (parches.Count > 0) prueba.Parches = Combinar(prueba.Parches, parches);
+    }
+
+    private static string Combinar(string? baseTexto, List<string> extras)
+    {
+        var partes = new List<string>();
+        if (!string.IsNullOrWhiteSpace(baseTexto)) partes.Add(baseTexto!.Trim());
+        partes.AddRange(extras);
+        return string.Join("\n", partes);
     }
 
     private static TEnum ParseEnum<TEnum>(string? value) where TEnum : struct, Enum =>
