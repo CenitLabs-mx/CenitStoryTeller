@@ -1,5 +1,6 @@
 using NovelaEngine.Web.Components;
 using NovelaEngine.Core.Llm;
+using NovelaEngine.Core.AcidTests;
 using NovelaEngine.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddNovelaLlm(builder.Configuration);
+builder.Services.AddNovelaAcidTests();
 builder.Services.AddNovelaData(builder.Configuration);
 builder.Services.AddNovelaRepositories();
 

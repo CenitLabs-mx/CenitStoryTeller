@@ -1,17 +1,20 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using NovelaEngine.Core.Llm;
+using System.Linq;
 
 namespace NovelaEngine.Core.AcidTests;
 
-public class QuimicaTest : IAcidTest
+public sealed class QuimicaTest : AcidTestBase
 {
-    public string Nombre => "Química";
+    public override string Nombre => "Química";
 
-    public async Task<AcidResult> EvaluarAsync(AcidContext ctx, ILlmClient llm, CancellationToken ct)
+    protected override string Criterio =>
+        "Verifica que las relaciones (romance, alianza, rivalidad) se sientan ganadas y construidas. " +
+        "Marca como forzada cualquier dinámica sin siembra previa en los eventos, o demasiado cursi/" +
+        "acelerada respecto a lo que ya ocurrió en la historia.";
+
+    protected override string ContextoRelevante(AcidContext ctx)
     {
-        // TODO: Relaciones ganadas vs forzadas/cheesy usando LLM
-        return await Task.FromResult(new AcidResult(true, null, null));
+        var nombres = string.Join(", ", ctx.Presentes.Select(p => p.Nombre));
+        return $"Personajes presentes: {nombres}\n\n" +
+               $"Eventos previos (siembra disponible):\n{EventosBreve(ctx)}";
     }
 }

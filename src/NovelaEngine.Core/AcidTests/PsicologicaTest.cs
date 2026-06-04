@@ -1,17 +1,21 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using NovelaEngine.Core.Llm;
+using System.Linq;
+using NovelaEngine.Data.Entities;
 
 namespace NovelaEngine.Core.AcidTests;
 
-public class PsicologicaTest : IAcidTest
+public sealed class PsicologicaTest : AcidTestBase
 {
-    public string Nombre => "Psicológica";
+    public override string Nombre => "Psicológica";
 
-    public async Task<AcidResult> EvaluarAsync(AcidContext ctx, ILlmClient llm, CancellationToken ct)
-    {
-        // TODO: Coherencia con herida/deseo/necesidad (detecta OOC) usando LLM
-        return await Task.FromResult(new AcidResult(true, null, null));
-    }
+    protected override string Criterio =>
+        "Verifica que las reacciones y decisiones de cada personaje sean coherentes con su " +
+        "herida central, su deseo y su necesidad. Detecta comportamiento OOC (fuera de personaje): " +
+        "giros emocionales sin motivación sembrada o contrarios a su arco.";
+
+    protected override string ContextoRelevante(AcidContext ctx) =>
+        ctx.Presentes.Count == 0
+            ? "(sin personajes presentes)"
+            : string.Join("\n", ctx.Presentes.Select(p =>
+                $"- {p.Nombre} ({Coalesce(p.Arquetipo)}). Herida: {Coalesce(p.HeridaCentral)}. " +
+                $"Deseo: {Coalesce(p.Deseo)}. Necesidad: {Coalesce(p.Necesidad)}."));
 }

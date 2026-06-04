@@ -1,17 +1,21 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using NovelaEngine.Core.Llm;
+using System.Linq;
+using NovelaEngine.Data.Entities;
 
 namespace NovelaEngine.Core.AcidTests;
 
-public class FisicaTest : IAcidTest
+public sealed class FisicaTest : AcidTestBase
 {
-    public string Nombre => "Física";
+    public override string Nombre => "Física";
 
-    public async Task<AcidResult> EvaluarAsync(AcidContext ctx, ILlmClient llm, CancellationToken ct)
-    {
-        // TODO: Cruza acciones contra Personaje.Restricciones usando LLM
-        return await Task.FromResult(new AcidResult(true, null, null));
-    }
+    protected override string Criterio =>
+        "Verifica que el cuerpo de cada personaje tolere lo que hace y que no se violen sus " +
+        "restricciones físicas (heridas, límites corporales, edad, capacidades). " +
+        "Un personaje con estado vital Muerto no puede actuar ni aparecer vivo en escena.";
+
+    protected override string ContextoRelevante(AcidContext ctx) =>
+        ctx.Presentes.Count == 0
+            ? "(sin personajes presentes)"
+            : string.Join("\n", ctx.Presentes.Select(p =>
+                $"- {p.Nombre} ({Coalesce(p.Rol)}). Estado vital: {p.EstadoVital}. " +
+                $"Restricciones: {Coalesce(p.Restricciones)}."));
 }

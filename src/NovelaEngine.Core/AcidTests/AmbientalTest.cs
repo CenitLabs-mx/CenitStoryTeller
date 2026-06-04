@@ -1,17 +1,15 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using NovelaEngine.Core.Llm;
-
 namespace NovelaEngine.Core.AcidTests;
 
-public class AmbientalTest : IAcidTest
+public sealed class AmbientalTest : AcidTestBase
 {
-    public string Nombre => "Ambiental";
+    public override string Nombre => "Ambiental";
 
-    public async Task<AcidResult> EvaluarAsync(AcidContext ctx, ILlmClient llm, CancellationToken ct)
-    {
-        // TODO: Plausibilidad del lugar + reacción de "metiches" usando LLM
-        return await Task.FromResult(new AcidResult(true, null, null));
-    }
+    protected override string Criterio =>
+        "Verifica que lo narrado sea plausible en este lugar y época, y que los testigos y el " +
+        "entorno reaccionen según las reglas del lugar (lore): física, leyes, normas sociales. " +
+        "Marca cualquier elemento que choque con el estado actual de la ubicación.";
+
+    protected override string ContextoRelevante(AcidContext ctx) =>
+        $"Ubicación: {UbicacionBreve(ctx)}\n" +
+        $"Plataforma/registro objetivo: {Coalesce(ctx.Capitulo.Plataforma)}";
 }
