@@ -31,6 +31,7 @@ public sealed class NovelaDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Titulo).HasMaxLength(300).IsRequired();
+            e.HasQueryFilter(x => x.EliminadaEn == null);
             e.HasMany(x => x.Personajes).WithOne().HasForeignKey(p => p.ObraId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Ubicaciones).WithOne().HasForeignKey(u => u.ObraId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Beats).WithOne().HasForeignKey(bt => bt.ObraId).OnDelete(DeleteBehavior.Cascade);

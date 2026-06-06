@@ -15,6 +15,9 @@ public interface IObraRepository
     Task<IReadOnlyList<Obra>> ListAsync(CancellationToken ct = default);
     Task AddAsync(Obra obra, CancellationToken ct = default);
     void Remove(Obra obra);
+    // Soft delete: marca EliminadaEn. La obra deja de aparecer en consultas normales.
+    Task<bool> EliminarAsync(Guid id, CancellationToken ct = default);
+    Task<bool> RestaurarAsync(Guid id, CancellationToken ct = default);
 }
 
 public sealed class ObraRepository : IObraRepository
@@ -44,4 +47,21 @@ public sealed class ObraRepository : IObraRepository
         await _db.Obras.AddAsync(obra, ct);
 
     public void Remove(Obra obra) => _db.Obras.Remove(obra);
+
+    public async Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)
+    {
+        var obra = await _db.Obras.FirstOrDefaultAsync(o => o.Id == id, ct);
+        if (obra is null) return false;
+        obra.EliminadaEn = DateTimeOffset.UtcNow;
+        return true;
+    }
+
+    // IgnoreQueryFilters porque la obra está oculta por el filtro de soft delete.
+    public async Task<bool> RestaurarAsync(Guid id, CancellationToken ct = default)
+    {
+        var obra = await _db.Obras.IgnoreQueryFilters().FirstOrDefaultAsync(o => o.Id == id, ct);
+        if (obra is null) return false;
+        obra.EliminadaEn = null;
+        return true;
+    }
 }

@@ -29,6 +29,9 @@ public class Obra
     public string? UniversoCompartido { get; set; }
     public string? TemaCentral { get; set; }
 
+    // Soft delete: cuando no es null, la obra queda oculta tras el query filter.
+    public DateTimeOffset? EliminadaEn { get; set; }
+
     public List<Personaje> Personajes { get; set; } = new();
     public List<Ubicacion> Ubicaciones { get; set; } = new();
     public List<Beat> Beats { get; set; } = new();
