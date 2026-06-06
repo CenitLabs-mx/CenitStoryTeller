@@ -18,14 +18,19 @@ builder.Services.AddNovelaRepositories();
 
 var app = builder.Build();
 
-// Aplica migraciones pendientes al arrancar (cómodo para Docker).
-using (var scope = app.Services.CreateScope())
+// Modo migración: `dotnet run -- --migrate` aplica migraciones y siembra el demo, luego sale.
+// El arranque normal NO toca el esquema — eso es responsabilidad del operador (CI, k8s init,
+// docker entrypoint dedicado) para evitar carreras entre instancias.
+if (args.Contains("--migrate"))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<NovelaDbContext>();
+    app.Logger.LogInformation("Applying pending migrations...");
     db.Database.Migrate();
-
-    // Carga el ejemplo de dominio público si la BD está vacía (idempotente).
+    app.Logger.LogInformation("Seeding East Lynne demo (idempotent)...");
     await EastLynneSeeder.SeedAsync(db);
+    app.Logger.LogInformation("Migrate + seed done. Exiting.");
+    return;
 }
 
 // Configure the HTTP request pipeline.

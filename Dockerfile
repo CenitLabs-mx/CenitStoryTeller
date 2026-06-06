@@ -11,4 +11,6 @@ WORKDIR /app
 COPY --from=build /app .
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
-ENTRYPOINT ["dotnet", "CenitStoryTeller.Web.dll"]
+# Apply migrations + seed once, then start the webserver. For multi-instance
+# deployments, run the --migrate step as a one-shot init container instead.
+ENTRYPOINT ["sh", "-c", "dotnet CenitStoryTeller.Web.dll --migrate && exec dotnet CenitStoryTeller.Web.dll"]
