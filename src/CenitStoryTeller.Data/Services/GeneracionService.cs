@@ -191,11 +191,13 @@ public sealed class GeneracionService : IGeneracionService
 
         foreach (var d in dimensiones)
         {
-            var dim = d.Dimension.ToLowerInvariant();
-            if (dim.StartsWith("fís") || dim.StartsWith("fis")) prueba.Fisica = d.Resultado.Pasa;
-            else if (dim.StartsWith("psic") || dim.StartsWith("psí")) prueba.Psicologica = d.Resultado.Pasa;
-            else if (dim.StartsWith("amb")) prueba.Ambiental = d.Resultado.Pasa;
-            else if (dim.StartsWith("quí") || dim.StartsWith("qui")) prueba.Quimica = d.Resultado.Pasa;
+            switch (d.Dimension)
+            {
+                case AcidDimension.Fisica: prueba.Fisica = d.Resultado.Pasa; break;
+                case AcidDimension.Psicologica: prueba.Psicologica = d.Resultado.Pasa; break;
+                case AcidDimension.Ambiental: prueba.Ambiental = d.Resultado.Pasa; break;
+                case AcidDimension.Quimica: prueba.Quimica = d.Resultado.Pasa; break;
+            }
 
             if (d.Resultado.Pasa) continue;
             if (!string.IsNullOrWhiteSpace(d.Resultado.Hallazgo))

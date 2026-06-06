@@ -4,7 +4,8 @@ namespace CenitStoryTeller.Core.AcidTests;
 
 public sealed class QuimicaTest : AcidTestBase
 {
-    public override string Nombre => "Química";
+    public override AcidDimension Dimension => AcidDimension.Quimica;
+    protected override string EtiquetaPrompt => "Química";
 
     protected override string Criterio =>
         "Verifica que las relaciones (romance, alianza, rivalidad) se sientan ganadas y construidas. " +

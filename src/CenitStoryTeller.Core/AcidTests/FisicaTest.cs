@@ -5,7 +5,8 @@ namespace CenitStoryTeller.Core.AcidTests;
 
 public sealed class FisicaTest : AcidTestBase
 {
-    public override string Nombre => "Física";
+    public override AcidDimension Dimension => AcidDimension.Fisica;
+    protected override string EtiquetaPrompt => "Física";
 
     protected override string Criterio =>
         "Verifica que el cuerpo de cada personaje tolere lo que hace y que no se violen sus " +

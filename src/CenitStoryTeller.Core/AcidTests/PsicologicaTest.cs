@@ -5,7 +5,8 @@ namespace CenitStoryTeller.Core.AcidTests;
 
 public sealed class PsicologicaTest : AcidTestBase
 {
-    public override string Nombre => "Psicológica";
+    public override AcidDimension Dimension => AcidDimension.Psicologica;
+    protected override string EtiquetaPrompt => "Psicológica";
 
     protected override string Criterio =>
         "Verifica que las reacciones y decisiones de cada personaje sean coherentes con su " +

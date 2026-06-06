@@ -14,7 +14,10 @@ namespace CenitStoryTeller.Core.AcidTests;
 /// JSON pequeño y estable. Cada dimensión solo define su criterio y su contexto.
 public abstract class AcidTestBase : IAcidTest
 {
-    public abstract string Nombre { get; }
+    public abstract AcidDimension Dimension { get; }
+
+    // Etiqueta legible para el prompt y los logs (acentos incluidos).
+    protected abstract string EtiquetaPrompt { get; }
 
     // Qué debe verificar exactamente esta dimensión.
     protected abstract string Criterio { get; }
@@ -44,7 +47,7 @@ public abstract class AcidTestBase : IAcidTest
             "\"hallazgo\": \"si falla, explica el problema citando el canon violado; si pasa, null\", " +
             "\"parche\": \"propuesta mínima y concreta para corregir; si pasa, null\"}";
 
-        return $"Eres un validador de coherencia narrativa especializado en la dimensión {Nombre} " +
+        return $"Eres un validador de coherencia narrativa especializado en la dimensión {EtiquetaPrompt} " +
                "de la Prueba del Ácido. No reescribes prosa: validas. " +
                Criterio + " " +
                "Responde ÚNICAMENTE con un bloque JSON, sin texto adicional, con esta forma exacta: " +

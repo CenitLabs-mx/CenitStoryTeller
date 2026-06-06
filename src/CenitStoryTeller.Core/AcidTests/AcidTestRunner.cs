@@ -5,7 +5,7 @@ using CenitStoryTeller.Core.Llm;
 
 namespace CenitStoryTeller.Core.AcidTests;
 
-public sealed record DimensionResultado(string Dimension, AcidResult Resultado);
+public sealed record DimensionResultado(AcidDimension Dimension, AcidResult Resultado);
 
 public interface IAcidTestRunner
 {
@@ -31,7 +31,7 @@ public sealed class AcidTestRunner : IAcidTestRunner
         foreach (var test in _tests)
         {
             var r = await test.EvaluarAsync(ctx, _llm, ct);
-            resultados.Add(new DimensionResultado(test.Nombre, r));
+            resultados.Add(new DimensionResultado(test.Dimension, r));
         }
         return resultados;
     }

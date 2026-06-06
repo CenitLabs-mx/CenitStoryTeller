@@ -2,7 +2,8 @@ namespace CenitStoryTeller.Core.AcidTests;
 
 public sealed class AmbientalTest : AcidTestBase
 {
-    public override string Nombre => "Ambiental";
+    public override AcidDimension Dimension => AcidDimension.Ambiental;
+    protected override string EtiquetaPrompt => "Ambiental";
 
     protected override string Criterio =>
         "Verifica que lo narrado sea plausible en este lugar y época, y que los testigos y el " +
