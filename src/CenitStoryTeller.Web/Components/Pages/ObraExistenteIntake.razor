@@ -4,7 +4,7 @@
 @using CenitStoryTeller.Core.Entities
 @using CenitStoryTeller.Data.Services
 @inject NovelaDbContext Db
-@inject IGeneracionService Generacion
+@inject IModernizacionService Modernizacion
 @inject NavigationManager Nav
 
 <PageTitle>Modernizar Obra Clásica - Novela Engine</PageTitle>
@@ -162,7 +162,7 @@
             };
 
             // 3. Ejecutar la modernización vía LLM
-            var obraMod = await Generacion.ModernizarCanonAsync(targetObraId, paramModernizar);
+            var obraMod = await Modernizacion.ModernizarCanonAsync(targetObraId, paramModernizar);
 
             // 4. Crear marcadores de capítulo para los beats modernizados que no los tengan
             var beatsNuevos = await Db.Beats

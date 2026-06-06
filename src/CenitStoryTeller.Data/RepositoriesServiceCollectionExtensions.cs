@@ -14,6 +14,7 @@ public static class RepositoriesServiceCollectionExtensions
         services.AddScoped<IRegistroPasoRepository, RegistroPasoRepository>();
         services.AddSingleton<IPromptProvider, FilePromptProvider>();
         services.AddScoped<IGeneracionService, GeneracionService>();
+        services.AddScoped<IModernizacionService, ModernizacionService>();
         return services;
     }
 }
