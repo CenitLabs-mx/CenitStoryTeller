@@ -1,0 +1,690 @@
+@page "/obras/nueva/inedita"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Options
+@using System.Text.Json
+@using CenitStoryTeller.Core.Llm
+@using CenitStoryTeller.Data
+@using CenitStoryTeller.Core.Entities
+@inject NovelaDbContext Db
+@inject ILlmClient Llm
+@inject IOptions<LlmOptions> LlmOpt
+@inject NavigationManager Nav
+
+<PageTitle>Crear Obra Inédita - Novela Engine</PageTitle>
+
+<div class="container my-5" style="max-width: 900px;">
+    <div class="mb-4">
+        <a href="/obras/nueva" class="btn btn-sm btn-outline-secondary">
+            <span class="bi bi-arrow-left"></span> Volver
+        </a>
+    </div>
+
+    <h1 class="display-6 fw-bold mb-4">Nueva Obra Inédita</h1>
+
+    <!-- Tabs para elegir entre Asistente IA o Manual -->
+    <ul class="nav nav-tabs mb-4" id="creacionTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(_activeTab == "wizard" ? "active" : "")" @onclick='() => SetTab("wizard")'>
+                <span class="bi bi-magic"></span> Asistente IA (Wizard)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(_activeTab == "manual" ? "active" : "")" @onclick='() => SetTab("manual")'>
+                <span class="bi bi-pencil-square"></span> Creación Manual
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border p-4 rounded bg-light">
+        @if (_activeTab == "wizard")
+        {
+            <!-- PESTAÑA WIZARD IA -->
+            <div class="wizard-section">
+                <p class="text-muted">
+                    Escribe tu premisa o idea general. La Inteligencia Artificial creará el título, logline, tema y propondrá personajes, ubicaciones y una estructura de beats dramáticos completa.
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Premisa de la Novela:</label>
+                    <textarea class="form-control" rows="4" @bind="_wizardPrompt" 
+                              placeholder="Ej: Una historia cyberpunk en Neo-Tokio. El protagonista es un hacker retirado que descubre un virus consciente que busca liberarse, pero corporaciones militares intentan atraparlo."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <button class="btn btn-primary" @onclick="GenerarConIA" disabled="@_loading">
+                        @if (_loading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span> Generando estructura...</span>
+                        }
+                        else
+                        {
+                            <span class="bi bi-cpu"></span><span> Generar Estructura con IA</span>
+                        }
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger">@_errorMessage</div>
+                }
+
+                @if (_wizardResult is not null)
+                {
+                    <hr class="my-4" />
+                    <div class="preview-panel p-3 border bg-white rounded shadow-sm">
+                        <h3 class="text-success mb-3 fw-bold"><span class="bi bi-check-circle"></span> Propuesta Generada</h3>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Título Propuesto:</label>
+                                <input class="form-control" @bind="_wizardResult.titulo" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Género:</label>
+                                <input class="form-control" @bind="_wizardResult.genero" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Logline:</label>
+                            <textarea class="form-control" rows="2" @bind="_wizardResult.logline"></textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Medio:</label>
+                                <input class="form-control" @bind="_wizardResult.medio" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Tema Central:</label>
+                                <input class="form-control" @bind="_wizardResult.temaCentral" />
+                            </div>
+                        </div>
+
+                        <h4 class="mt-4 border-bottom pb-2">Personajes (@_wizardResult.personajes.Count)</h4>
+                        <ul class="list-group mb-3">
+                            @foreach (var p in _wizardResult.personajes)
+                            {
+                                <li class="list-group-item">
+                                    <strong>@p.nombre</strong> (@p.rol · @p.arquetipo)
+                                    <br/><small class="text-muted">Deseo: @p.deseo · Herida: @p.heridaCentral</small>
+                                </li>
+                            }
+                        </ul>
+
+                        <h4 class="mt-4 border-bottom pb-2">Ubicaciones (@_wizardResult.ubicaciones.Count)</h4>
+                        <ul class="list-group mb-3">
+                            @foreach (var u in _wizardResult.ubicaciones)
+                            {
+                                <li class="list-group-item">
+                                    <strong>@u.nombre</strong> (@u.tipo) — <span class="text-muted">@u.rolEnTrama</span>
+                                </li>
+                            }
+                        </ul>
+
+                        <h4 class="mt-4 border-bottom pb-2">Beats Dramáticos (@_wizardResult.beats.Count)</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Ord.</th>
+                                        <th>Título</th>
+                                        <th>Acto</th>
+                                        <th>Función</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var b in _wizardResult.beats)
+                                    {
+                                        <tr>
+                                            <td>@b.orden</td>
+                                            <td><strong>@b.titulo</strong></td>
+                                            <td>@b.acto</td>
+                                            <td>@b.funcion</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button class="btn btn-success btn-lg px-5" @onclick="GuardarObraWizard">
+                                <span class="bi bi-save"></span> Guardar Obra e Iniciar Redacción
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- PESTAÑA MANUAL -->
+            <div class="manual-section">
+                <h3 class="h5 fw-bold mb-3">Datos Básicos</h3>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Título de la Obra:</label>
+                        <input class="form-control" @bind="_manualObra.Titulo" placeholder="Ej. El Enigma del Espacio" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Género:</label>
+                        <input class="form-control" @bind="_manualObra.Genero" placeholder="Ej. Suspenso / Ciencia Ficción" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Medio:</label>
+                        <input class="form-control" @bind="_manualObra.Medio" placeholder="Ej. Novela serializada" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tema Central:</label>
+                        <input class="form-control" @bind="_manualObra.TemaCentral" placeholder="Ej. El precio del conocimiento" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Logline / Sinopsis Corta:</label>
+                        <textarea class="form-control" rows="2" @bind="_manualObra.Logline" placeholder="Breve resumen de una frase que capture la premisa..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Personajes Manual -->
+                <h4 class="h5 border-bottom pb-2 mt-4 fw-bold">Personajes</h4>
+                <div class="row g-2 mb-3 bg-white p-3 border rounded">
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" @bind="_newPersonaje.Nombre" placeholder="Nombre" />
+                    </div>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" @bind="_newPersonaje.Rol" placeholder="Rol (Protagonista/Antagonista...)" />
+                    </div>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" @bind="_newPersonaje.Arquetipo" placeholder="Arquetipo" />
+                    </div>
+                    <div class="col-md-6">
+                        <input class="form-control form-control-sm" @bind="_newPersonaje.HeridaCentral" placeholder="Herida Central" />
+                    </div>
+                    <div class="col-md-6">
+                        <input class="form-control form-control-sm" @bind="_newPersonaje.Deseo" placeholder="Deseo Principal" />
+                    </div>
+                    <div class="col-md-10">
+                        <input class="form-control form-control-sm" @bind="_newPersonaje.Necesidad" placeholder="Necesidad de Cambio" />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-sm btn-primary" @onclick="AgregarPersonajeManual">Añadir</button>
+                    </div>
+                </div>
+                <ul class="list-group mb-4">
+                    @foreach (var p in _manualPersonajes)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span><strong>@p.Nombre</strong> (@p.Rol · @p.Arquetipo)</span>
+                            <button class="btn btn-sm btn-link text-danger p-0" @onclick="() => _manualPersonajes.Remove(p)">Eliminar</button>
+                        </li>
+                    }
+                </ul>
+
+                <!-- Ubicaciones Manual -->
+                <h4 class="h5 border-bottom pb-2 mt-4 fw-bold">Ubicaciones</h4>
+                <div class="row g-2 mb-3 bg-white p-3 border rounded">
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" @bind="_newUbicacion.Nombre" placeholder="Nombre (Ej. La Nave, Neo-Tokio)" />
+                    </div>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" @bind="_newUbicacion.Tipo" placeholder="Tipo (Edificio, Ciudad, etc.)" />
+                    </div>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" @bind="_newUbicacion.RolEnTrama" placeholder="Rol en Trama" />
+                    </div>
+                    <div class="col-md-10">
+                        <input class="form-control form-control-sm" @bind="_newUbicacion.EstadoActual" placeholder="Estado Inicial" />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-sm btn-primary" @onclick="AgregarUbicacionManual">Añadir</button>
+                    </div>
+                </div>
+                <ul class="list-group mb-4">
+                    @foreach (var u in _manualUbicaciones)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span><strong>@u.Nombre</strong> (@u.Tipo) — <span class="text-muted">@u.RolEnTrama</span></span>
+                            <button class="btn btn-sm btn-link text-danger p-0" @onclick="() => _manualUbicaciones.Remove(u)">Eliminar</button>
+                        </li>
+                    }
+                </ul>
+
+                <!-- Beats Manual -->
+                <h4 class="h5 border-bottom pb-2 mt-4 fw-bold">Estructura Dramática (Beats)</h4>
+                <div class="row g-2 mb-3 bg-white p-3 border rounded">
+                    <div class="col-md-2">
+                        <input type="number" class="form-control form-control-sm" @bind="_newBeat.Orden" placeholder="Orden" />
+                    </div>
+                    <div class="col-md-5">
+                        <input class="form-control form-control-sm" @bind="_newBeat.Titulo" placeholder="Título del Beat" />
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" @bind="_newBeat.Acto">
+                            @foreach (var a in Enum.GetValues<Acto>())
+                            {
+                                <option value="@a">@a</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" @bind="_newBeat.Funcion">
+                            @foreach (var f in Enum.GetValues<FuncionNarrativa>())
+                            {
+                                <option value="@f">@f</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-10">
+                        <input class="form-control form-control-sm" @bind="_newBeat.Descripcion" placeholder="Descripción de lo que ocurre en este beat..." />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-sm btn-primary" @onclick="AgregarBeatManual">Añadir</button>
+                    </div>
+                </div>
+                <ul class="list-group mb-4">
+                    @foreach (var b in _manualBeats.OrderBy(b => b.Orden))
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span><strong>@b.Orden. @b.Titulo</strong> (@b.Acto · @b.Funcion)</span>
+                            <button class="btn btn-sm btn-link text-danger p-0" @onclick="() => _manualBeats.Remove(b)">Eliminar</button>
+                        </li>
+                    }
+                </ul>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger">@_errorMessage</div>
+                }
+
+                <div class="text-center mt-5">
+                    <button class="btn btn-success btn-lg px-5" @onclick="GuardarObraManual">
+                        <span class="bi bi-save"></span> Guardar Obra e Iniciar Redacción
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _activeTab = "wizard";
+    private bool _loading = false;
+    private string _wizardPrompt = "";
+    private string _errorMessage = "";
+    private WizardResultDto? _wizardResult;
+
+    // Modelos manuales
+    private Obra _manualObra = new() { Estado = ObraEstado.Biblia, Intake = IntakeTipo.Idea };
+    private List<Personaje> _manualPersonajes = new();
+    private List<Ubicacion> _manualUbicaciones = new();
+    private List<Beat> _manualBeats = new();
+
+    private Personaje _newPersonaje = new() { EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico };
+    private Ubicacion _newUbicacion = new() { Canon = CanonNivel.Canonico };
+    private Beat _newBeat = new() { Estado = BeatEstado.Pendiente };
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+        _errorMessage = "";
+    }
+
+    private void AgregarPersonajeManual()
+    {
+        if (string.IsNullOrWhiteSpace(_newPersonaje.Nombre)) return;
+        _manualPersonajes.Add(new Personaje
+        {
+            Nombre = _newPersonaje.Nombre,
+            Rol = _newPersonaje.Rol ?? "Secundario",
+            Arquetipo = _newPersonaje.Arquetipo ?? "N/D",
+            HeridaCentral = _newPersonaje.HeridaCentral ?? "",
+            Deseo = _newPersonaje.Deseo ?? "",
+            Necesidad = _newPersonaje.Necesidad ?? "",
+            EstadoEnTrama = _newPersonaje.EstadoEnTrama ?? "",
+            EstadoVital = _newPersonaje.EstadoVital,
+            Canon = CanonNivel.Canonico
+        });
+        _newPersonaje = new Personaje { EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico };
+    }
+
+    private void AgregarUbicacionManual()
+    {
+        if (string.IsNullOrWhiteSpace(_newUbicacion.Nombre)) return;
+        _manualUbicaciones.Add(new Ubicacion
+        {
+            Nombre = _newUbicacion.Nombre,
+            Tipo = _newUbicacion.Tipo ?? "Otro",
+            RolEnTrama = _newUbicacion.RolEnTrama ?? "",
+            EstadoActual = _newUbicacion.EstadoActual ?? "",
+            Canon = CanonNivel.Canonico
+        });
+        _newUbicacion = new Ubicacion { Canon = CanonNivel.Canonico };
+    }
+
+    private void AgregarBeatManual()
+    {
+        if (string.IsNullOrWhiteSpace(_newBeat.Titulo)) return;
+        _manualBeats.Add(new Beat
+        {
+            Orden = _newBeat.Orden == 0 ? _manualBeats.Count + 1 : _newBeat.Orden,
+            Titulo = _newBeat.Titulo,
+            Acto = _newBeat.Acto,
+            Funcion = _newBeat.Funcion,
+            Descripcion = _newBeat.Descripcion ?? "",
+            Estado = BeatEstado.Pendiente
+        });
+        _newBeat = new Beat { Estado = BeatEstado.Pendiente, Orden = _manualBeats.Count + 1 };
+    }
+
+    private async Task GenerarConIA()
+    {
+        if (string.IsNullOrWhiteSpace(_wizardPrompt))
+        {
+            _errorMessage = "Por favor, escribe una premisa para tu novela.";
+            return;
+        }
+
+        _loading = true;
+        _errorMessage = "";
+        _wizardResult = null;
+
+        try
+        {
+            var systemPrompt = @"Actúa como un planificador experto de esquemas y biblias literarias de novelas. 
+A partir de la premisa proporcionada por el usuario, debes generar una biblia estructurada de la novela.
+Tu respuesta debe ser únicamente un bloque de JSON válido, sin delimitadores ```json o texto explicativo alrededor.
+
+El JSON debe coincidir con este esquema exacto:
+{
+  ""titulo"": ""Título de la novela"",
+  ""logline"": ""Logline de una frase"",
+  ""temaCentral"": ""Tema filosófico central"",
+  ""medio"": ""Novela serializada / Novela corta"",
+  ""genero"": ""Género literario"",
+  ""personajes"": [
+    {
+      ""nombre"": ""Nombre Completo"",
+      ""rol"": ""Protagonista / Antagonista / Secundario"",
+      ""arquetipo"": ""Arquetipo psicológico"",
+      ""heridaCentral"": ""Su trauma o debilidad inicial"",
+      ""deseo"": ""Meta externa visible"",
+      ""necesidad"": ""Lección interna que debe aprender"",
+      ""estadoEnTrama"": ""Situación inicial en la historia"",
+      ""estadoVital"": ""Vivo""
+    }
+  ],
+  ""ubicaciones"": [
+    {
+      ""nombre"": ""Nombre de la locación"",
+      ""tipo"": ""Edificio / Ciudad / Bosque / Nave / etc"",
+      ""rolEnTrama"": ""Importancia narrativa de este lugar"",
+      ""estadoActual"": ""Estado inicial de la locación""
+    }
+  ],
+  ""beats"": [
+    {
+      ""orden"": 1,
+      ""titulo"": ""Nombre del beat"",
+      ""acto"": ""Setup / Acto1 / Acto2 / Acto3"",
+      ""funcion"": ""Setup / Detonante / Giro / PuntoMedio / Crisis / Climax / Resolucion"",
+      ""descripcion"": ""Resumen detallado de la acción en este beat""
+    }
+  ]
+}
+
+Genera por lo menos 3 personajes, 2 ubicaciones y una estructura de entre 5 y 9 beats ordenados secuencialmente.";
+
+            var resp = await Llm.CompleteAsync(new LlmRequest
+            {
+                Model = LlmOpt.Value.ModelReview,
+                Temperature = 0.7,
+                Messages = new[]
+                {
+                    LlmMessage.System(systemPrompt),
+                    LlmMessage.User(_wizardPrompt)
+                }
+            });
+
+            var rawJson = ExtraerJson(resp.Text);
+            _wizardResult = JsonSerializer.Deserialize<WizardResultDto>(rawJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (_wizardResult is null)
+            {
+                throw new InvalidOperationException("No se pudo deserializar la respuesta del LLM.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error al generar estructura con la IA: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string ExtraerJson(string text)
+    {
+        var start = text.IndexOf('{');
+        var end = text.LastIndexOf('}');
+        if (start == -1 || end == -1 || end < start)
+            throw new FormatException("La respuesta del LLM no contenía un bloque JSON válido.");
+        return text.Substring(start, end - start + 1);
+    }
+
+    private async Task GuardarObraWizard()
+    {
+        if (_wizardResult is null) return;
+
+        try
+        {
+            var obra = new Obra
+            {
+                Id = Guid.NewGuid(),
+                Titulo = _wizardResult.titulo,
+                Logline = _wizardResult.logline,
+                TemaCentral = _wizardResult.temaCentral,
+                Medio = _wizardResult.medio,
+                Genero = _wizardResult.genero,
+                Estado = ObraEstado.Biblia,
+                Intake = IntakeTipo.Idea
+            };
+
+            foreach (var pDto in _wizardResult.personajes)
+            {
+                obra.Personajes.Add(new Personaje
+                {
+                    Id = Guid.NewGuid(),
+                    Nombre = pDto.nombre,
+                    Rol = pDto.rol,
+                    Arquetipo = pDto.arquetipo,
+                    HeridaCentral = pDto.heridaCentral,
+                    Deseo = pDto.deseo,
+                    Necesidad = pDto.necesidad,
+                    EstadoEnTrama = pDto.estadoEnTrama,
+                    EstadoVital = Enum.TryParse<EstadoVital>(pDto.estadoVital, true, out var ev) ? ev : EstadoVital.Vivo,
+                    Canon = CanonNivel.Canonico
+                });
+            }
+
+            foreach (var uDto in _wizardResult.ubicaciones)
+            {
+                obra.Ubicaciones.Add(new Ubicacion
+                {
+                    Id = Guid.NewGuid(),
+                    Nombre = uDto.nombre,
+                    Tipo = uDto.tipo,
+                    RolEnTrama = uDto.rolEnTrama,
+                    EstadoActual = uDto.estadoActual,
+                    Canon = CanonNivel.Canonico
+                });
+            }
+
+            foreach (var bDto in _wizardResult.beats)
+            {
+                var beat = new Beat
+                {
+                    Id = Guid.NewGuid(),
+                    Orden = bDto.orden,
+                    Titulo = bDto.titulo,
+                    Acto = Enum.TryParse<Acto>(bDto.acto, true, out var ac) ? ac : Acto.Setup,
+                    Funcion = Enum.TryParse<FuncionNarrativa>(bDto.funcion, true, out var fn) ? fn : FuncionNarrativa.Setup,
+                    Descripcion = bDto.descripcion,
+                    Estado = BeatEstado.Pendiente
+                };
+                obra.Beats.Add(beat);
+
+                // Crear automáticamente el marcador de capítulo para cada beat dramático
+                obra.Capitulos.Add(new Capitulo
+                {
+                    Id = Guid.NewGuid(),
+                    Orden = bDto.orden,
+                    Titulo = bDto.titulo,
+                    Estado = CapituloEstado.Borrador
+                });
+            }
+
+            await Db.Obras.AddAsync(obra);
+
+            Db.RegistrosPaso.Add(new RegistroPaso
+            {
+                Id = Guid.NewGuid(),
+                ObraId = obra.Id,
+                Agente = "Wizard IA",
+                Accion = "Carga de obra inédita vía asistente",
+                Cambios = $"{obra.Personajes.Count} personajes, {obra.Ubicaciones.Count} ubicaciones, " +
+                          $"{obra.Beats.Count} beats, {obra.Capitulos.Count} capítulos.",
+                Timestamp = DateTimeOffset.UtcNow
+            });
+
+            await Db.SaveChangesAsync();
+            Nav.NavigateTo("");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error al guardar la obra en la base de datos: {ex.Message}";
+        }
+    }
+
+    private async Task GuardarObraManual()
+    {
+        if (string.IsNullOrWhiteSpace(_manualObra.Titulo))
+        {
+            _errorMessage = "El título de la obra es requerido.";
+            return;
+        }
+
+        if (_manualBeats.Count == 0)
+        {
+            _errorMessage = "Debes definir al menos un beat para tener estructura dramática.";
+            return;
+        }
+
+        try
+        {
+            var obra = new Obra
+            {
+                Id = Guid.NewGuid(),
+                Titulo = _manualObra.Titulo,
+                Logline = _manualObra.Logline,
+                TemaCentral = _manualObra.TemaCentral,
+                Medio = _manualObra.Medio,
+                Genero = _manualObra.Genero,
+                Estado = ObraEstado.Biblia,
+                Intake = IntakeTipo.Idea
+            };
+
+            foreach (var p in _manualPersonajes)
+            {
+                p.Id = Guid.NewGuid();
+                obra.Personajes.Add(p);
+            }
+
+            foreach (var u in _manualUbicaciones)
+            {
+                u.Id = Guid.NewGuid();
+                obra.Ubicaciones.Add(u);
+            }
+
+            foreach (var b in _manualBeats)
+            {
+                b.Id = Guid.NewGuid();
+                obra.Beats.Add(b);
+
+                // Crear automáticamente marcador de capítulo
+                obra.Capitulos.Add(new Capitulo
+                {
+                    Id = Guid.NewGuid(),
+                    Orden = b.Orden,
+                    Titulo = b.Titulo,
+                    Estado = CapituloEstado.Borrador
+                });
+            }
+
+            await Db.Obras.AddAsync(obra);
+
+            Db.RegistrosPaso.Add(new RegistroPaso
+            {
+                Id = Guid.NewGuid(),
+                ObraId = obra.Id,
+                Agente = "Creador Manual",
+                Accion = "Carga manual de obra inédita",
+                Cambios = $"{obra.Personajes.Count} personajes, {obra.Ubicaciones.Count} ubicaciones, " +
+                          $"{obra.Beats.Count} beats, {obra.Capitulos.Count} capítulos.",
+                Timestamp = DateTimeOffset.UtcNow
+            });
+
+            await Db.SaveChangesAsync();
+            Nav.NavigateTo("");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error al guardar la obra: {ex.Message}";
+        }
+    }
+
+    // DTOs para deserialización limpia del asistente IA
+    private class WizardResultDto
+    {
+        public string titulo { get; set; } = "";
+        public string logline { get; set; } = "";
+        public string temaCentral { get; set; } = "";
+        public string medio { get; set; } = "";
+        public string genero { get; set; } = "";
+        public List<PersonajeDto> personajes { get; set; } = new();
+        public List<UbicacionDto> ubicaciones { get; set; } = new();
+        public List<BeatDto> beats { get; set; } = new();
+    }
+
+    private class PersonajeDto
+    {
+        public string nombre { get; set; } = "";
+        public string rol { get; set; } = "";
+        public string arquetipo { get; set; } = "";
+        public string heridaCentral { get; set; } = "";
+        public string deseo { get; set; } = "";
+        public string necesidad { get; set; } = "";
+        public string estadoEnTrama { get; set; } = "";
+        public string estadoVital { get; set; } = "Vivo";
+    }
+
+    private class UbicacionDto
+    {
+        public string nombre { get; set; } = "";
+        public string tipo { get; set; } = "";
+        public string rolEnTrama { get; set; } = "";
+        public string estadoActual { get; set; } = "";
+    }
+
+    private class BeatDto
+    {
+        public int orden { get; set; }
+        public string titulo { get; set; } = "";
+        public string acto { get; set; } = "";
+        public string funcion { get; set; } = "";
+        public string descripcion { get; set; } = "";
+    }
+}

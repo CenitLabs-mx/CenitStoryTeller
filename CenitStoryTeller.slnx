@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CenitStoryTeller.Core/CenitStoryTeller.Core.csproj" />
+    <Project Path="src/CenitStoryTeller.Data/CenitStoryTeller.Data.csproj" />
+    <Project Path="src/CenitStoryTeller.Web/CenitStoryTeller.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CenitStoryTeller.Tests/CenitStoryTeller.Tests.csproj" />
+  </Folder>
+</Solution>

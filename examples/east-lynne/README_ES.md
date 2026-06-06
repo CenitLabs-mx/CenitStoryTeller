@@ -1,6 +1,6 @@
 # East Lynne — ejemplo de modernización
 
-Dataset de ejemplo para **novela-engine**: una obra de dominio público
+Dataset de ejemplo para **CenitStoryTeller**: una obra de dominio público
 (*East Lynne*, Ellen Wood, 1861) modernizada a registro juvenil/coloquial
 (Wattpad) mediante el sub-agente MODERNIZA. **Adaptación, no traducción.**
 

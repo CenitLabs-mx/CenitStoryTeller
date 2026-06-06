@@ -1,6 +1,6 @@
 # East Lynne — modernization example
 
-Sample dataset for **novela-engine**: a public domain work (*East Lynne*, Ellen Wood, 1861) modernized to a juvenile/colloquial tone (Wattpad) using the MODERNIZA sub-agent. **Adaptation, not translation.**
+Sample dataset for **CenitStoryTeller**: a public domain work (*East Lynne*, Ellen Wood, 1861) modernized to a juvenile/colloquial tone (Wattpad) using the MODERNIZA sub-agent. **Adaptation, not translation.**
 
 Original source (public domain): Project Gutenberg #3322.
 

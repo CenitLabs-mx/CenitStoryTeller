@@ -1,4 +1,4 @@
-# novela-engine
+# CenitStoryTeller
 
 Framework agéntico para escribir novelas con canon coherente y control de calidad
 automático ("Prueba del Ácido"). El usuario orquesta; los subagentes generan y validan.
@@ -13,8 +13,8 @@ automático ("Prueba del Ácido"). El usuario orquesta; los subagentes generan y
 ## Arranque rápido
 
 ```bash
-git clone https://github.com/<tu-usuario>/novela-engine.git
-cd novela-engine
+git clone https://github.com/<tu-usuario>/CenitStoryTeller.git
+cd CenitStoryTeller
 cp .env.example .env        # rellena tu LLM_API_KEY
 docker compose up --build
 ```

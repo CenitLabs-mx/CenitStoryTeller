@@ -1,4 +1,4 @@
-# novela-engine
+# CenitStoryTeller
 
 Agentic framework for writing novels with a coherent canon and automated quality control ("Acid Test"). The user orchestrates; subagents generate and validate.
 
@@ -12,8 +12,8 @@ Agentic framework for writing novels with a coherent canon and automated quality
 ## Quick Start
 
 ```bash
-git clone https://github.com/<your-username>/novela-engine.git
-cd novela-engine
+git clone https://github.com/<your-username>/CenitStoryTeller.git
+cd CenitStoryTeller
 cp .env.example .env        # fill in your LLM_API_KEY
 docker compose up --build
 ```
