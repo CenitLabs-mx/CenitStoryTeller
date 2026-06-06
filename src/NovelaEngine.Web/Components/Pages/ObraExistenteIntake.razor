@@ -1,0 +1,276 @@
+@page "/obras/nueva/modernizar"
+@using Microsoft.EntityFrameworkCore
+@using NovelaEngine.Data
+@using NovelaEngine.Data.Entities
+@using NovelaEngine.Data.Services
+@inject NovelaDbContext Db
+@inject IGeneracionService Generacion
+@inject NavigationManager Nav
+
+<PageTitle>Modernizar Obra Clásica - Novela Engine</PageTitle>
+
+<div class="container my-5" style="max-width: 800px;">
+    <div class="mb-4">
+        <a href="/obras/nueva" class="btn btn-sm btn-outline-secondary">
+            <span class="bi bi-arrow-left"></span> Volver
+        </a>
+    </div>
+
+    <h1 class="display-6 fw-bold mb-4">Modernizar Obra Clásica</h1>
+
+    <div class="card p-4 bg-light border">
+        <p class="text-muted">
+            Selecciona una obra de dominio público para adaptarla. La Inteligencia Artificial reescribirá la biblia del canon (personajes, locaciones, beats y eventos) adaptándola a la cultura, tono y época de destino configurada.
+        </p>
+
+        @if (_loading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                <h3 class="h5 fw-bold">Modernizando Canon con IA...</h3>
+                <p class="text-muted">Esto puede tardar unos momentos mientras la IA realiza la transposición dramática.</p>
+            </div>
+        }
+        else
+        {
+            <div class="mb-4">
+                <label class="form-label fw-bold">1. Selecciona el Clásico de Origen:</label>
+                <select class="form-select" @bind="_selectedSourceType">
+                    <option value="template-eastlynne">Plantilla: East Lynne (Melodrama Victoriano)</option>
+                    <option value="template-frankenstein">Plantilla: Frankenstein (Terror Gótico / Sci-Fi)</option>
+                    @foreach (var o in _dbClassicObras)
+                    {
+                        <option value="db-@o.Id">Existente en BD: @o.Titulo</option>
+                    }
+                </select>
+            </div>
+
+            <h3 class="h5 fw-bold border-bottom pb-2 mb-3">2. Parámetros de Modernización</h3>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Época Destino:</label>
+                    <input class="form-control" @bind="_params.EpocaDestino" placeholder="Ej. Años 2020s" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Lugar y Cultura:</label>
+                    <input class="form-control" @bind="_params.LugarCultura" placeholder="Ej. México urbano moderno" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Registro / Estilo de Lenguaje:</label>
+                    <input class="form-control" @bind="_params.Registro" placeholder="Ej. juvenil / Wattpad" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Plataforma Objetivo:</label>
+                    <input class="form-control" @bind="_params.PlataformaObjetivo" placeholder="Ej. Wattpad" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Fidelidad con el Original:</label>
+                    <select class="form-select" @bind="_fidelidadString">
+                        <option value="Libre">Libre (Adaptación moderna creativa)</option>
+                        <option value="Fiel">Fiel (Transposición directa del argumento)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tono Narrativo:</label>
+                    <input class="form-control" @bind="_params.Tono" placeholder="Ej. dramático-emocional" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger mb-3">@_errorMessage</div>
+            }
+
+            <div class="text-center">
+                <button class="btn btn-success btn-lg px-5" @onclick="EjecutarModernizacion">
+                    <span class="bi bi-arrow-repeat"></span> Cargar y Modernizar con IA
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _loading = false;
+    private string _selectedSourceType = "template-eastlynne";
+    private string _fidelidadString = "Libre";
+    private string _errorMessage = "";
+    private List<Obra> _dbClassicObras = new();
+
+    private ParametrosModel _params = new()
+    {
+        EpocaDestino = "Años 2020s",
+        LugarCultura = "México urbano moderno",
+        Registro = "juvenil / Wattpad",
+        PlataformaObjetivo = "Wattpad",
+        Tono = "dramático-emocional"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dbClassicObras = await Db.Obras
+            .Where(o => o.Intake == IntakeTipo.DominioPublico)
+            .ToListAsync();
+    }
+
+    private async Task EjecutarModernizacion()
+    {
+        _loading = true;
+        _errorMessage = "";
+
+        try
+        {
+            Guid targetObraId;
+
+            // 1. Resolver u obtener la obra clásica origen
+            if (_selectedSourceType.StartsWith("template-"))
+            {
+                // Cargar una plantilla clásica e insertarla primero en la BD
+                var classicObra = _selectedSourceType switch
+                {
+                    "template-frankenstein" => GetFrankensteinClassicTemplate(),
+                    _ => GetEastLynneClassicTemplate()
+                };
+
+                await Db.Obras.AddAsync(classicObra);
+                await Db.SaveChangesAsync();
+                targetObraId = classicObra.Id;
+            }
+            else
+            {
+                // Usar una existente en base de datos
+                var idStr = _selectedSourceType.Replace("db-", "");
+                if (Guid.TryParse(idStr, out var id))
+                {
+                    targetObraId = id;
+                }
+                else
+                {
+                    throw new InvalidOperationException("ID de obra inválido.");
+                }
+            }
+
+            // 2. Construir los parámetros estructurados
+            var paramModernizar = new ParametrosModernizacion
+            {
+                EpocaDestino = _params.EpocaDestino,
+                LugarCultura = _params.LugarCultura,
+                Registro = _params.Registro,
+                PlataformaObjetivo = _params.PlataformaObjetivo,
+                Fidelidad = _fidelidadString == "Fiel" ? NivelFidelidad.Fiel : NivelFidelidad.Libre,
+                Tono = _params.Tono
+            };
+
+            // 3. Ejecutar la modernización vía LLM
+            var obraMod = await Generacion.ModernizarCanonAsync(targetObraId, paramModernizar);
+
+            // 4. Crear marcadores de capítulo para los beats modernizados que no los tengan
+            var beatsNuevos = await Db.Beats
+                .Where(b => b.ObraId == targetObraId)
+                .ToListAsync();
+
+            var capitulosExistentes = await Db.Capitulos
+                .Where(c => c.ObraId == targetObraId)
+                .ToListAsync();
+
+            foreach (var beat in beatsNuevos)
+            {
+                if (!capitulosExistentes.Any(c => c.Orden == beat.Orden))
+                {
+                    await Db.Capitulos.AddAsync(new Capitulo
+                    {
+                        Id = Guid.NewGuid(),
+                        ObraId = targetObraId,
+                        Orden = beat.Orden,
+                        Titulo = beat.Titulo,
+                        Estado = CapituloEstado.Borrador
+                    });
+                }
+            }
+
+            // Guardar cambios finales de los capítulos
+            await Db.SaveChangesAsync();
+
+            Nav.NavigateTo("");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error durante la modernización: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // Plantillas estáticas para poblar la base de datos con obras clásicas
+    private Obra GetEastLynneClassicTemplate()
+    {
+        var obra = new Obra
+        {
+            Id = Guid.NewGuid(),
+            Titulo = "East Lynne (Clásico)",
+            Medio = "Novela victoriana serializada",
+            Genero = "Melodrama Victoriano",
+            Logline = "Lady Isabel Vane abandona a su esposo e hijos por un aristócrata seductor, sufriendo la ruina social y regresando oculta como institutriz.",
+            Intake = IntakeTipo.DominioPublico,
+            Estado = ObraEstado.Biblia,
+            TemaCentral = "La moral victoriana y el costo irreversible de un impulso."
+        };
+
+        obra.Personajes.Add(new Personaje { Id = Guid.NewGuid(), Nombre = "Lady Isabel Vane", Rol = "Protagonista", Arquetipo = "Heroína trágica", HeridaCentral = "Inocencia y abandono emocional", Deseo = "Amor y refugio", Necesidad = "Resiliencia y asumir consecuencias", EstadoEnTrama = "Joven huérfana aristócrata", EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico });
+        obra.Personajes.Add(new Personaje { Id = Guid.NewGuid(), Nombre = "Archibald Carlyle", Rol = "Deuteragonista", Arquetipo = "Hombre intachable / Abogado", HeridaCentral = "Reserva emocional", Deseo = "Estabilidad familiar", Necesidad = "Expresar vulnerabilidad", EstadoEnTrama = "Abogado respetado", EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico });
+        obra.Personajes.Add(new Personaje { Id = Guid.NewGuid(), Nombre = "Francis Levison", Rol = "Antagonista", Arquetipo = "Seductor aristócrata", HeridaCentral = "Narcisismo vacío", Deseo = "Conquista y placer sin costo", Necesidad = "Enfrentar la justicia", EstadoEnTrama = "Rake adinerado", EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico });
+
+        obra.Ubicaciones.Add(new Ubicacion { Id = Guid.NewGuid(), Nombre = "Mansión East Lynne", Tipo = "Edificio", RolEnTrama = "Hogar ancestral de los Vane, luego comprada por Carlyle", EstadoActual = "En venta al inicio", Canon = CanonNivel.Canonico });
+        obra.Ubicaciones.Add(new Ubicacion { Id = Guid.NewGuid(), Nombre = "West Lynne", Tipo = "Pueblo", RolEnTrama = "Pueblo chismoso y ojo público", EstadoActual = "Comunidad rural", Canon = CanonNivel.Canonico });
+
+        obra.Beats.Add(new Beat { Id = Guid.NewGuid(), Orden = 1, Titulo = "La ruina del Lord", Acto = Acto.Setup, Funcion = FuncionNarrativa.Setup, Descripcion = "Muere el padre de Isabel en la bancarrota. Isabel queda desamparada y pierde la mansión familiar." });
+        obra.Beats.Add(new Beat { Id = Guid.NewGuid(), Orden = 2, Titulo = "El matrimonio de conveniencia", Acto = Acto.Setup, Funcion = FuncionNarrativa.Detonante, Descripcion = "Carlyle compra la mansión y le propone matrimonio a Isabel para darle seguridad." });
+        obra.Beats.Add(new Beat { Id = Guid.NewGuid(), Orden = 3, Titulo = "La fuga prohibida", Acto = Acto.Acto2, Funcion = FuncionNarrativa.Crisis, Descripcion = "Manipulada por los celos y la labia de Levison, Isabel escapa con él abandonando a sus hijos." });
+
+        obra.Eventos.Add(new Evento { Id = Guid.NewGuid(), Orden = 1, Titulo = "Bancarrota Vane", Acto = Acto.Setup, Tipo = EventoTipo.Canonico, CambioConsecuencia = "Isabel pierde estatus y riqueza." });
+
+        return obra;
+    }
+
+    private Obra GetFrankensteinClassicTemplate()
+    {
+        var obra = new Obra
+        {
+            Id = Guid.NewGuid(),
+            Titulo = "Frankenstein (Clásico)",
+            Medio = "Novela gótica epistolar",
+            Genero = "Terror Gótico / Ciencia Ficción",
+            Logline = "Un científico obsesionado crea vida a partir de materia inerte, pero abandona a su criatura desatando una venganza trágica.",
+            Intake = IntakeTipo.DominioPublico,
+            Estado = ObraEstado.Biblia,
+            TemaCentral = "La arrogancia científica y las consecuencias de abandonar la creación."
+        };
+
+        obra.Personajes.Add(new Personaje { Id = Guid.NewGuid(), Nombre = "Victor Frankenstein", Rol = "Protagonista", Arquetipo = "Científico loco", HeridaCentral = "Obsesión con la muerte y la gloria", Deseo = "Conquistar la muerte y crear vida", Necesidad = "Asumir la responsabilidad de sus actos", EstadoEnTrama = "Joven estudiante brillante", EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico });
+        obra.Personajes.Add(new Personaje { Id = Guid.NewGuid(), Nombre = "La Criatura", Rol = "Antagonista", Arquetipo = "Hijo abandonado / Monstruo", HeridaCentral = "Rechazo universal", Deseo = "Amor y compañerismo", Necesidad = "Aceptación o venganza total", EstadoEnTrama = "Ser recién animado", EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico });
+        obra.Personajes.Add(new Personaje { Id = Guid.NewGuid(), Nombre = "Elizabeth Lavenza", Rol = "Secundario", Arquetipo = "Ángel del hogar", HeridaCentral = "Pasividad", Deseo = "Bienestar y boda con Victor", Necesidad = "Auto-preservación", EstadoEnTrama = "Hija adoptiva y prometida", EstadoVital = EstadoVital.Vivo, Canon = CanonNivel.Canonico });
+
+        obra.Ubicaciones.Add(new Ubicacion { Id = Guid.NewGuid(), Nombre = "Laboratorio Ingolstadt", Tipo = "Edificio", RolEnTrama = "Lugar secreto del experimento", EstadoActual = "Activo en secreto", Canon = CanonNivel.Canonico });
+        obra.Ubicaciones.Add(new Ubicacion { Id = Guid.NewGuid(), Nombre = "Ginebra", Tipo = "Ciudad", RolEnTrama = "Hogar de la familia Frankenstein", EstadoActual = "Lugar de refugio", Canon = CanonNivel.Canonico });
+
+        obra.Beats.Add(new Beat { Id = Guid.NewGuid(), Orden = 1, Titulo = "La chispa de vida", Acto = Acto.Setup, Funcion = FuncionNarrativa.Setup, Descripcion = "Victor logra dar vida a la criatura en su laboratorio, pero huye horrorizado al ver su aspecto." });
+        obra.Beats.Add(new Beat { Id = Guid.NewGuid(), Orden = 2, Titulo = "La petición del monstruo", Acto = Acto.Acto2, Funcion = FuncionNarrativa.PuntoMedio, Descripcion = "La criatura confronta a Victor en las montañas y le exige que le cree una compañera a cambio de paz." });
+        obra.Beats.Add(new Beat { Id = Guid.NewGuid(), Orden = 3, Titulo = "Tragedia en la noche de bodas", Acto = Acto.Acto3, Funcion = FuncionNarrativa.Climax, Descripcion = "La criatura cumple su promesa de venganza asesinando a Elizabeth en su noche de bodas." });
+
+        obra.Eventos.Add(new Evento { Id = Guid.NewGuid(), Orden = 1, Titulo = "Animación de la Criatura", Acto = Acto.Setup, Tipo = EventoTipo.Canonico, CambioConsecuencia = "Nace una nueva vida consciente." });
+
+        return obra;
+    }
+
+    // Modelo auxiliar para el binding del formulario
+    private class ParametrosModel
+    {
+        public string EpocaDestino { get; set; } = "";
+        public string LugarCultura { get; set; } = "";
+        public string Registro { get; set; } = "";
+        public string PlataformaObjetivo { get; set; } = "";
+        public string Tono { get; set; } = "";
+    }
+}

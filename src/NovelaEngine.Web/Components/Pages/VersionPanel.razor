@@ -1,50 +1,105 @@
+@inject IGeneracionService Generacion
+
 @if (Version is null)
 {
     <div class="panel vacio"><em>Selecciona una versión.</em></div>
 }
 else
 {
-    <div class="panel">
-        <header class="panel-head">
-            <strong>v@(Version.NumeroVersion)</strong>
-            <span class="modelo">@Version.Modelo</span>
-            @if (Version.EsFinal)
-            {
-                <span class="final">FINAL</span>
-            }
-            <time>@Version.CreadoEn.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</time>
+    <div class="panel p-3 border bg-white rounded shadow-sm">
+        <header class="panel-head border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center">
+            <div>
+                <strong class="fs-5 text-dark">v@(Version.NumeroVersion)</strong>
+                <span class="badge bg-secondary ms-2">@Version.Modelo</span>
+                @if (Version.EsFinal)
+                {
+                    <span class="badge bg-success ms-2">FINAL</span>
+                }
+            </div>
+            <span class="text-muted small">@Version.CreadoEn.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
         </header>
 
         @if (Version.Acido is { } a)
         {
-            <div class="acido">
+            <div class="acido mb-3 p-2 bg-light border rounded d-flex flex-wrap gap-2 align-items-center">
                 <AcidoBadge Ok="a.Fisica" Label="Física" />
                 <AcidoBadge Ok="a.Psicologica" Label="Psicológica" />
                 <AcidoBadge Ok="a.Ambiental" Label="Ambiental" />
                 <AcidoBadge Ok="a.Quimica" Label="Química" />
                 @* Anacronismo pasa cuando es false (sin anacronismos) *@
                 <AcidoBadge Ok="!a.Anacronismo" Label="Anacronismo" />
-                <AcidoBadge Ok="a.FidelidadFuncional" Label="Fidelidad funcional" />
-                <span class="veredicto v-@a.Veredicto">@a.Veredicto</span>
+                <AcidoBadge Ok="a.FidelidadFuncional" Label="Fidelidad" />
+                <span class="badge bg-dark ms-auto p-2">Veredicto: @a.Veredicto</span>
             </div>
             @if (!string.IsNullOrWhiteSpace(a.Hallazgos))
             {
-                <details><summary>Hallazgos</summary><p>@a.Hallazgos</p></details>
+                <details class="mb-2"><summary class="text-danger fw-bold cursor-pointer">Hallazgos de la IA</summary><p class="mt-1 text-muted small whitespace-pre">@a.Hallazgos</p></details>
             }
             @if (!string.IsNullOrWhiteSpace(a.Parches))
             {
-                <details><summary>Parches</summary><p>@a.Parches</p></details>
+                <details class="mb-3"><summary class="text-success fw-bold cursor-pointer">Parches Sugeridos</summary><p class="mt-1 text-muted small whitespace-pre">@a.Parches</p></details>
             }
         }
         else
         {
-            <div class="acido sin">Sin Prueba del Ácido en esta versión.</div>
+            <div class="acido sin mb-3 p-3 bg-light border rounded text-center">
+                <p class="text-muted mb-2">Esta versión aún no tiene una Prueba del Ácido asociada.</p>
+                <button class="btn btn-sm btn-outline-danger" @onclick="EjecutarPruebaAcido" disabled="@_analizando">
+                    @if (_analizando)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span> Ejecutando análisis...</span>
+                    }
+                    else
+                    {
+                        <span class="bi bi-shield-check"></span><span> Ejecutar Prueba del Ácido</span>
+                    }
+                </button>
+                @if (!string.IsNullOrEmpty(_errorAnalisis))
+                {
+                    <div class="alert alert-danger mt-2 py-1 px-2 small mb-0">@_errorAnalisis</div>
+                }
+            </div>
         }
 
-        <pre class="texto">@Version.Texto</pre>
+        <div class="mt-3">
+            <h4 class="h6 fw-bold mb-2">Instrucción usada:</h4>
+            <blockquote class="bg-light p-2 border-start border-primary rounded text-muted small">
+                @(string.IsNullOrWhiteSpace(Version.PromptUsado) ? "Sin instrucción (borrador inicial/seeder)" : Version.PromptUsado)
+            </blockquote>
+        </div>
+
+        <h4 class="h6 fw-bold mb-2 mt-4">Prosa del borrador:</h4>
+        <pre class="texto p-3 bg-light border rounded whitespace-pre-wrap" style="max-height: 400px; overflow-y: auto;">@Version.Texto</pre>
     </div>
 }
 
 @code {
     [Parameter] public CapituloVersion? Version { get; set; }
+    [Parameter] public EventCallback OnStateChanged { get; set; }
+
+    private bool _analizando = false;
+    private string _errorAnalisis = "";
+
+    private async Task EjecutarPruebaAcido()
+    {
+        if (Version is null) return;
+        _analizando = true;
+        _errorAnalisis = "";
+
+        try
+        {
+            await Generacion.CorrerPruebaAcidoAsync(Version.Id);
+            await OnStateChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorAnalisis = $"Error al ejecutar la prueba: {ex.Message}";
+        }
+        finally
+        {
+            _analizando = false;
+        }
+    }
 }
+

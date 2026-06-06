@@ -1,5 +1,6 @@
 @page "/capitulos/{CapituloId:guid}/versiones"
 @inject ICapituloRepository Capitulos
+@inject IGeneracionService Generacion
 
 <PageTitle>Versiones del capítulo</PageTitle>
 
@@ -9,19 +10,50 @@
 }
 else
 {
-    <h1>@_capitulo.Titulo</h1>
+    <div class="mb-3">
+        <a href="" class="btn btn-sm btn-outline-secondary">
+            <span class="bi bi-arrow-left"></span> Volver al Taller
+        </a>
+    </div>
 
-    <div class="selector">
-        <label>Izquierda:
-            <select @bind="_izqId">
+    <h1 class="display-6 fw-bold mb-3">@_capitulo.Titulo</h1>
+
+    <!-- Panel para redactar/generar un borrador de este capítulo -->
+    <div class="card mb-4 p-3 bg-white border shadow-sm">
+        <h3 class="h6 fw-bold mb-2 text-primary"><span class="bi bi-cpu"></span> Redactar / Generar Nueva Versión</h3>
+        <div class="input-group">
+            <input type="text" class="form-control" @bind="_promptUsuario" 
+                   placeholder="Escribe la instrucción o el enfoque de esta escena (ej: Lady Isabel reflexiona sobre su deudas)..." 
+                   disabled="@_generando" />
+            <button class="btn btn-primary" @onclick="GenerarNuevoBorrador" disabled="@(string.IsNullOrWhiteSpace(_promptUsuario) || _generando)">
+                @if (_generando)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span> Generando...</span>
+                }
+                else
+                {
+                    <span class="bi bi-pencil-fill"></span><span> Generar Borrador</span>
+                }
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(_errorGeneracion))
+        {
+            <div class="alert alert-danger mt-2 py-1 px-2 small mb-0">@_errorGeneracion</div>
+        }
+    </div>
+
+    <div class="selector mb-3 p-3 bg-light border rounded d-flex gap-3 align-items-center">
+        <label class="mb-0"><strong>Izquierda:</strong>
+            <select class="form-select form-select-sm d-inline-block w-auto ms-1" @bind="_izqId">
                 @foreach (var v in _versiones)
                 {
                     <option value="@v.Id">v@(v.NumeroVersion) · @v.Modelo @(v.EsFinal ? "★" : "")</option>
                 }
             </select>
         </label>
-        <label>Derecha:
-            <select @bind="_derId">
+        <label class="mb-0"><strong>Derecha:</strong>
+            <select class="form-select form-select-sm d-inline-block w-auto ms-1" @bind="_derId">
                 @foreach (var v in _versiones)
                 {
                     <option value="@v.Id">v@(v.NumeroVersion) · @v.Modelo @(v.EsFinal ? "★" : "")</option>
@@ -30,9 +62,13 @@ else
         </label>
     </div>
 
-    <div class="comparador">
-        <VersionPanel Version="Izq" />
-        <VersionPanel Version="Der" />
+    <div class="comparador d-flex gap-4">
+        <div class="flex-fill" style="width: 50%;">
+            <VersionPanel Version="Izq" OnStateChanged="RecargarDatos" />
+        </div>
+        <div class="flex-fill" style="width: 50%;">
+            <VersionPanel Version="Der" OnStateChanged="RecargarDatos" />
+        </div>
     </div>
 }
 
@@ -42,16 +78,60 @@ else
     private List<CapituloVersion> _versiones = new();
     private Guid _izqId, _derId;
 
+    private string _promptUsuario = "";
+    private bool _generando = false;
+    private string _errorGeneracion = "";
+
     private CapituloVersion? Izq => _versiones.FirstOrDefault(v => v.Id == _izqId);
     private CapituloVersion? Der => _versiones.FirstOrDefault(v => v.Id == _derId);
 
     protected override async Task OnParametersSetAsync()
     {
-        _capitulo = await Capitulos.GetConVersionesAsync(CapituloId);
-        _versiones = _capitulo?.Versiones.OrderBy(v => v.NumeroVersion).ToList() ?? new();
+        await RecargarDatos();
 
         // Por defecto: comparar la penúltima con la última (o la única que haya).
-        _derId = _versiones.LastOrDefault()?.Id ?? Guid.Empty;
-        _izqId = (_versiones.Count > 1 ? _versiones[^2] : _versiones.LastOrDefault())?.Id ?? Guid.Empty;
+        if (_versiones.Any())
+        {
+            _derId = _versiones.Last().Id;
+            _izqId = _versiones.Count > 1 ? _versiones[^2].Id : _versiones.Last().Id;
+        }
+    }
+
+    private async Task RecargarDatos()
+    {
+        _capitulo = await Capitulos.GetConVersionesAsync(CapituloId);
+        _versiones = _capitulo?.Versiones.OrderBy(v => v.NumeroVersion).ToList() ?? new();
+    }
+
+    private async Task GenerarNuevoBorrador()
+    {
+        if (string.IsNullOrWhiteSpace(_promptUsuario)) return;
+        _generando = true;
+        _errorGeneracion = "";
+
+        try
+        {
+            var versionNueva = await Generacion.GenerarBorradorAsync(CapituloId, _promptUsuario);
+            _promptUsuario = ""; // Limpiar
+            
+            // Recargar datos
+            await RecargarDatos();
+            
+            // Seleccionar automáticamente la versión nueva a la derecha
+            _derId = versionNueva.Id;
+            if (_versiones.Count > 1)
+            {
+                _izqId = _versiones[^2].Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorGeneracion = $"Error al generar borrador: {ex.Message}";
+        }
+        finally
+        {
+            _generando = false;
+        }
     }
 }
+

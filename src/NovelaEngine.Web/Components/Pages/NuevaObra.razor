@@ -1,0 +1,61 @@
+@page "/obras/nueva"
+
+<PageTitle>Nueva Obra - Novela Engine</PageTitle>
+
+<div class="container my-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">Comenzar Nueva Obra</h1>
+        <p class="lead text-muted">Selecciona el tipo de flujo para iniciar tu proceso creativo.</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <!-- Tarjeta 1: Obra Inédita -->
+        <div class="col-md-5">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body d-flex flex-column text-center p-4">
+                    <div class="icon-wrapper mb-3 text-primary">
+                        <span class="bi bi-journal-plus fs-1"></span>
+                    </div>
+                    <h2 class="h4 card-title fw-semibold">Obra Inédita</h2>
+                    <p class="card-text text-muted flex-grow-1">
+                        Crea una obra original desde cero. Define su canon (personajes, ubicaciones, beats y eventos) de manera manual o asistido por un asistente de Inteligencia Artificial (Wizard).
+                    </p>
+                    <a href="/obras/nueva/inedita" class="btn btn-primary mt-3">Iniciar Desde Cero</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2: Obra Existente / Modernización -->
+        <div class="col-md-5">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body d-flex flex-column text-center p-4">
+                    <div class="icon-wrapper mb-3 text-success">
+                        <span class="bi bi-arrow-repeat fs-1"></span>
+                    </div>
+                    <h2 class="h4 card-title fw-semibold">Obra Existente (Modernización)</h2>
+                    <p class="card-text text-muted flex-grow-1">
+                        Toma una obra clásica de dominio público y utiliza Inteligencia Artificial para adaptarla y modernizarla de forma automática a contextos y problemáticas actuales.
+                    </p>
+                    <a href="/obras/nueva/modernizar" class="btn btn-success mt-3">Modernizar Clásico</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="" class="btn btn-link text-secondary">Volver al Inicio</a>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .icon-wrapper {
+        font-size: 3rem;
+    }
+</style>
