@@ -35,6 +35,12 @@ Plausibility vetoes implausible actions; it never generates them. Before writing
 - Respect each character's voice (register, catchphrases, what they keep silent).
 - Maintain sensory continuity with the location and time.
 
+## Output Format
+- **CRITICAL**: Your final response must contain ONLY the written prose of the chapter/scene.
+- Do NOT include any of the planning steps, setup details, proposed reactions, Acid Test checkmarks, or event logs in your response.
+- Perform all these steps, validations, and logs internally to guide your writing, but do not write them to the output.
+- Start your response directly with the prose of the chapter.
+
 ## Canon Rules
 - Canonical: fixed fact, cannot be contradicted.
 - Draft: proposed by you, not yet confirmed.

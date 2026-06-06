@@ -44,6 +44,12 @@ La plausibilidad veta acciones inverosímiles; nunca las genera. Antes de escrib
 - Respeta la voz de cada personaje (registro, muletillas, qué calla).
 - Mantén continuidad sensorial con la ubicación y el momento.
 
+## Formato de Salida
+- **CRÍTICO**: Tu respuesta final debe contener ÚNICAMENTE la prosa escrita del capítulo/escena.
+- NO incluyas ninguno de los pasos de planificación, detalles de configuración, reacciones propuestas, marcas de la Prueba del Ácido o registros de eventos en tu respuesta.
+- Realiza todos estos pasos, validaciones y registros internamente para guiar tu escritura, pero no los escribas en la salida.
+- Comienza tu respuesta directamente con la prosa del capítulo.
+
 ## Reglas de canon
 - Canónico: hecho fijo, no se contradice.
 - Borrador: propuesta tuya, aún no confirmada.
