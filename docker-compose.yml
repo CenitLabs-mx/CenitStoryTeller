@@ -9,8 +9,8 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: novela
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tuPassword}
       POSTGRES_DB: novela
     volumes:
       - novela-data:/var/lib/postgresql/data   # contenido privado, fuera del repo

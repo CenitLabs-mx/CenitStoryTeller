@@ -10,7 +10,7 @@ public sealed class NovelaDbContextFactory : IDesignTimeDbContextFactory<NovelaD
     public NovelaDbContext CreateDbContext(string[] args)
     {
         var cs = Environment.GetEnvironmentVariable("ConnectionStrings__Default")
-                 ?? "Host=localhost;Database=novela;Username=novela;Password=novela";
+                 ?? "Host=localhost;Database=novela;Username=postgres;Password=tuPassword";
 
         var options = new DbContextOptionsBuilder<NovelaDbContext>()
             .UseNpgsql(cs)
