@@ -135,7 +135,7 @@ public class RegistroPaso   // log auditable: "cada paso de cada proyecto"
 {
     public Guid Id { get; set; }
     public Guid ObraId { get; set; }
-    public string Agente { get; set; } = "";    // MotorDeHistoria | ContinuidadAcido
+    public string Agente { get; set; } = "";
     public string Accion { get; set; } = "";
     public string? CanonSnapshot { get; set; }   // qué canon vio el agente (JSON)
     public string? Cambios { get; set; }
