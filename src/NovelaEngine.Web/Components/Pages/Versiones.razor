@@ -29,7 +29,7 @@ else
                 @if (_generando)
                 {
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span> Generando...</span>
+                    <span> Trabajando...</span>
                 }
                 else
                 {
@@ -37,6 +37,13 @@ else
                 }
             </button>
         </div>
+        @if (!string.IsNullOrEmpty(_statusMensaje))
+        {
+            <div class="alert alert-info mt-2 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                <span class="spinner-grow spinner-grow-sm text-info" role="status" aria-hidden="true"></span>
+                <span>@_statusMensaje</span>
+            </div>
+        }
         @if (!string.IsNullOrEmpty(_errorGeneracion))
         {
             <div class="alert alert-danger mt-2 py-1 px-2 small mb-0">@_errorGeneracion</div>
@@ -80,6 +87,7 @@ else
 
     private string _promptUsuario = "";
     private bool _generando = false;
+    private string _statusMensaje = "";
     private string _errorGeneracion = "";
 
     private CapituloVersion? Izq => _versiones.FirstOrDefault(v => v.Id == _izqId);
@@ -108,11 +116,15 @@ else
         if (string.IsNullOrWhiteSpace(_promptUsuario)) return;
         _generando = true;
         _errorGeneracion = "";
+        _statusMensaje = "Enviando orden al backend y conectando con la IA (DeepSeek)...";
+        StateHasChanged();
+        await Task.Delay(50); // Darle tiempo a Blazor para renderizar el cambio de estado inicial
 
         try
         {
             var versionNueva = await Generacion.GenerarBorradorAsync(CapituloId, _promptUsuario);
             _promptUsuario = ""; // Limpiar
+            _statusMensaje = ""; // Limpiar
             
             // Recargar datos
             await RecargarDatos();
@@ -124,9 +136,15 @@ else
                 _izqId = _versiones[^2].Id;
             }
         }
+        catch (System.Net.Http.HttpRequestException httpEx)
+        {
+            _statusMensaje = "";
+            _errorGeneracion = $"Error de red/conexión: No se pudo establecer conexión con la API de DeepSeek (el backend no recibió la orden): {httpEx.Message}. Verifica tu API Key o conexión a internet.";
+        }
         catch (Exception ex)
         {
-            _errorGeneracion = $"Error al generar borrador: {ex.Message}";
+            _statusMensaje = "";
+            _errorGeneracion = $"Error al procesar la orden en el backend: {ex.Message}";
         }
         finally
         {
