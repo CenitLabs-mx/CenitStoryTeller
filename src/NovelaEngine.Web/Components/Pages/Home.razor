@@ -3,17 +3,16 @@
 
 <PageTitle>Novela Engine</PageTitle>
 
-<h1>Novela Engine</h1>
-<p class="text-muted">
-    Taller de obras. Entra a la bitácora de una obra o a las versiones de un capítulo
-    para revisar la Prueba del Ácido.
-</p>
-
-<div class="mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6 fw-bold mb-0">Novela Engine</h1>
     <a href="/obras/nueva" class="btn btn-primary">
         <span class="bi bi-plus-circle" aria-hidden="true"></span> Nueva Obra
     </a>
 </div>
+
+<p class="text-muted mb-4">
+    Taller de obras literarias con canon inteligente y Prueba del Ácido.
+</p>
 
 @if (_obras is null)
 {
@@ -22,47 +21,50 @@
 else if (_obras.Count == 0)
 {
     <div class="alert alert-info">
-        No hay obras todavía. Corre el seeder de ejemplo para cargar
-        <strong>East Lynne</strong> (ver <code>EastLynneSeeder</code>).
+        No hay obras todavía. Crea una obra inédita, moderniza un clásico o corre el seeder de ejemplo para cargar
+        <strong>East Lynne</strong>.
     </div>
 }
 else
 {
-    @foreach (var v in _obras)
-    {
-        <div class="card mb-3">
-            <div class="card-body">
-                <h2 class="h4 card-title">@v.Obra.Titulo</h2>
-                <p class="card-subtitle mb-2 text-muted">
-                    @(v.Obra.Medio ?? "—") · @v.Obra.Estado · Intake: @v.Obra.Intake
-                </p>
-                @if (!string.IsNullOrWhiteSpace(v.Obra.Logline))
-                {
-                    <p>@v.Obra.Logline</p>
-                }
-                <p>
-                    <a class="btn btn-sm btn-outline-secondary"
-                       href="/obras/@(v.Obra.Id)/pasos">Bitácora</a>
-                </p>
-                @if (v.Capitulos.Count == 0)
-                {
-                    <p><em>Sin capítulos.</em></p>
-                }
-                else
-                {
-                    <ul class="list-unstyled">
-                        @foreach (var c in v.Capitulos)
+    <div class="row g-4">
+        @foreach (var v in _obras)
+        {
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-light bg-white">
+                    <div class="card-body d-flex flex-column p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h2 class="h4 card-title fw-bold mb-0 text-dark">@v.Obra.Titulo</h2>
+                            <span class="badge bg-secondary">@v.Obra.Estado</span>
+                        </div>
+                        <p class="card-subtitle text-muted small mb-3">
+                            <strong>Medio:</strong> @(v.Obra.Medio ?? "—") · 
+                            <strong>Género:</strong> @(v.Obra.Genero ?? "—") · 
+                            <strong>Intake:</strong> @v.Obra.Intake
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(v.Obra.Logline))
                         {
-                            <li>
-                                <a href="/capitulos/@(c.Id)/versiones">@c.Orden. @c.Titulo</a>
-                                <span class="text-muted"> — @c.Estado</span>
-                            </li>
+                            <p class="card-text text-muted flex-grow-1 small italic">
+                                "@v.Obra.Logline"
+                            </p>
                         }
-                    </ul>
-                }
+                        else
+                        {
+                            <div class="flex-grow-1"></div>
+                        }
+                        <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                            <a class="btn btn-sm btn-primary flex-fill" href="/obras/@(v.Obra.Id)">
+                                <span class="bi bi-folder2-open"></span> Centro Operativo
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/obras/@(v.Obra.Id)/pasos">
+                                <span class="bi text-muted bi-clock-history"></span> Bitácora
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 }
 
 @code {
