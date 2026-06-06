@@ -8,6 +8,8 @@ services:
       - db
   db:
     image: postgres:16
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-tuPassword}
