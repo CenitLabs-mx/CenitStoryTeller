@@ -69,7 +69,6 @@ public sealed class ModernizacionService : IModernizacionService
         {
             var personaje = new Personaje
             {
-                Id = Guid.NewGuid(),
                 ObraId = obra.Id,
                 Nombre = d.nombre,
                 Rol = d.rol ?? "",
@@ -91,7 +90,6 @@ public sealed class ModernizacionService : IModernizacionService
         {
             var ubicacion = new Ubicacion
             {
-                Id = Guid.NewGuid(),
                 ObraId = obra.Id,
                 Nombre = d.nombre,
                 Tipo = d.tipo ?? "",
@@ -108,7 +106,6 @@ public sealed class ModernizacionService : IModernizacionService
         {
             obra.Beats.Add(new Beat
             {
-                Id = Guid.NewGuid(),
                 ObraId = obra.Id,
                 Titulo = d.titulo,
                 Orden = d.orden,
@@ -124,7 +121,6 @@ public sealed class ModernizacionService : IModernizacionService
         {
             var evento = new Evento
             {
-                Id = Guid.NewGuid(),
                 ObraId = obra.Id,
                 Titulo = d.titulo,
                 Orden = d.orden,
