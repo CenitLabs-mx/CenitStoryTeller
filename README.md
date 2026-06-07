@@ -16,6 +16,18 @@ end-to-end; APIs may still shift. Read [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
+## Preview
+
+<!-- Replace these placeholders with real screenshots — see docs/images/README.md -->
+
+| Workspace | Acid test failed → regenerate |
+|---|---|
+| ![Obra workspace](docs/images/01-workspace.png) | ![Acid failed](docs/images/02-acid-failed.png) |
+
+| Per-user LLM config | Beat reorder |
+|---|---|
+| ![Configuracion](docs/images/03-configuracion.png) | ![Beat reorder](docs/images/04-beat-reorder.png) |
+
 ## What problem this solves
 
 LLMs are confident liars over long-form narrative: characters speak out of
@@ -67,6 +79,10 @@ exact canon snapshot the agent had in context.
 
 Three LLM providers built in: **OpenAI**, **Gemini**, **Ollama** (for fully
 local runs with Llama/Gemma/Mistral).
+
+For a deeper walkthrough — sequence diagrams of every flow, the acid
+test rubric, the compendio cache, multi-tenancy, and how to swap or
+translate the prompts — read [`docs/architecture.md`](docs/architecture.md).
 
 ## Quick start
 

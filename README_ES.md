@@ -17,6 +17,18 @@ funciona de punta a punta; las APIs aún pueden cambiar. Consulta
 
 ---
 
+## Vista previa
+
+<!-- Sustituye estos placeholders por screenshots reales — ver docs/images/README.md -->
+
+| Workspace de obra | Ácido falló → regenerar |
+|---|---|
+| ![Workspace de obra](docs/images/01-workspace.png) | ![Ácido fallido](docs/images/02-acid-failed.png) |
+
+| Configuración LLM por usuario | Reordenar beats |
+|---|---|
+| ![Configuración](docs/images/03-configuracion.png) | ![Reordenar beats](docs/images/04-beat-reorder.png) |
+
 ## Qué problema resuelve
 
 Los LLM son mentirosos confiados en narrativa larga: los personajes se
@@ -68,6 +80,10 @@ snapshot exacto del canon que vio el agente.
 
 Tres proveedores LLM incluidos: **OpenAI**, **Gemini**, **Ollama** (para
 correr 100% local con Llama/Gemma/Mistral).
+
+Para profundizar — diagramas de secuencia de cada flujo, la rúbrica del
+ácido, el caché del compendio, multi-tenancy, y cómo cambiar o traducir
+los prompts — lee [`docs/architecture.md`](docs/architecture.md).
 
 ## Arranque rápido
 
