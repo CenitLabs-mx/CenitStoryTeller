@@ -39,6 +39,37 @@ else
             {
                 <details class="mb-3"><summary class="text-success fw-bold cursor-pointer">Parches Sugeridos</summary><p class="mt-1 text-muted small whitespace-pre">@a.Parches</p></details>
             }
+
+            @if (a.Veredicto != Veredicto.Aprobado)
+            {
+                <div class="border-top pt-3 mt-3">
+                    <h6 class="fw-bold text-warning mb-2">
+                        <span class="bi bi-arrow-clockwise"></span> Regenerar con observaciones
+                    </h6>
+                    <p class="small text-muted mb-2">
+                        Edita las observaciones si quieres ajustar el énfasis. La nueva versión se guardará como v@(Version.NumeroVersion + 1).
+                    </p>
+                    <textarea class="form-control form-control-sm mb-2" rows="4"
+                              @bind="_observaciones" disabled="@_regenerando"
+                              placeholder="Hallazgos y parches a corregir..."></textarea>
+                    <button class="btn btn-sm btn-warning" @onclick="RegenerarConObservaciones"
+                            disabled="@(_regenerando || string.IsNullOrWhiteSpace(_observaciones))">
+                        @if (_regenerando)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span> Regenerando...</span>
+                        }
+                        else
+                        {
+                            <span class="bi bi-arrow-clockwise"></span><span> Regenerar v@(Version.NumeroVersion + 1)</span>
+                        }
+                    </button>
+                    @if (!string.IsNullOrEmpty(_errorRegen))
+                    {
+                        <div class="alert alert-danger mt-2 py-1 px-2 small mb-0">@_errorRegen</div>
+                    }
+                </div>
+            }
         }
         else
         {
@@ -81,6 +112,33 @@ else
     private bool _analizando = false;
     private string _errorAnalisis = "";
 
+    private bool _regenerando = false;
+    private string _errorRegen = "";
+    private string _observaciones = "";
+
+    // Cuando llega una versión con prueba del ácido fallida, pre-cargamos las
+    // observaciones combinando hallazgos + parches. El usuario puede editarlas
+    // antes de regenerar.
+    protected override void OnParametersSet()
+    {
+        if (Version?.Acido is { Veredicto: not Veredicto.Aprobado } a)
+        {
+            var sb = new System.Text.StringBuilder();
+            if (!string.IsNullOrWhiteSpace(a.Hallazgos))
+            {
+                sb.AppendLine("Hallazgos:");
+                sb.AppendLine(a.Hallazgos);
+            }
+            if (!string.IsNullOrWhiteSpace(a.Parches))
+            {
+                if (sb.Length > 0) sb.AppendLine();
+                sb.AppendLine("Parches sugeridos:");
+                sb.AppendLine(a.Parches);
+            }
+            _observaciones = sb.ToString().Trim();
+        }
+    }
+
     private async Task EjecutarPruebaAcido()
     {
         if (Version is null) return;
@@ -99,6 +157,27 @@ else
         finally
         {
             _analizando = false;
+        }
+    }
+
+    private async Task RegenerarConObservaciones()
+    {
+        if (Version is null || string.IsNullOrWhiteSpace(_observaciones)) return;
+        _regenerando = true;
+        _errorRegen = "";
+
+        try
+        {
+            await Generacion.RegenerarConObservacionesAsync(Version.Id, _observaciones);
+            await OnStateChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorRegen = $"Error al regenerar: {ex.Message}";
+        }
+        finally
+        {
+            _regenerando = false;
         }
     }
 }
