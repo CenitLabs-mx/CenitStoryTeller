@@ -1,5 +1,6 @@
 @page "/capitulos/{CapituloId:guid}/versiones"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject ICapituloRepository Capitulos
 @inject IGeneracionService Generacion
 

@@ -1,5 +1,6 @@
 @page "/obras/{ObraId:guid}/pasos"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject IRegistroPasoRepository RegistroPasoRepo
 
 <PageTitle>Bitácora de la obra</PageTitle>

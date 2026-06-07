@@ -1,5 +1,6 @@
 @page "/logout"
 @layout AuthLayout
+@attribute [AllowAnonymous]
 @using Microsoft.AspNetCore.Identity
 @using CenitStoryTeller.Data.Entities
 @inject SignInManager<Usuario> SignInMgr
