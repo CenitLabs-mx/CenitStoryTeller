@@ -30,6 +30,7 @@ public sealed class NovelaDbContext : IdentityDbContext<Usuario, Microsoft.AspNe
     public DbSet<CapituloVersion> CapituloVersiones => Set<CapituloVersion>();
     public DbSet<PruebaAcido> PruebasAcido => Set<PruebaAcido>();
     public DbSet<RegistroPaso> RegistrosPaso => Set<RegistroPaso>();
+    public DbSet<ConfiguracionLlm> ConfiguracionesLlm => Set<ConfiguracionLlm>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder cb)
     {
@@ -45,6 +46,20 @@ public sealed class NovelaDbContext : IdentityDbContext<Usuario, Microsoft.AspNe
         b.Entity<Usuario>(e =>
         {
             e.Property(u => u.NombreDisplay).HasMaxLength(200);
+        });
+
+        b.Entity<ConfiguracionLlm>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Provider).HasMaxLength(40).IsRequired();
+            e.Property(x => x.ApiKey).HasMaxLength(500);
+            e.Property(x => x.BaseUrl).HasMaxLength(500);
+            e.Property(x => x.ModelDraft).HasMaxLength(120);
+            e.Property(x => x.ModelReview).HasMaxLength(120);
+            // Una sola config por usuario.
+            e.HasIndex(x => x.UsuarioId).IsUnique();
+            e.HasOne<Usuario>().WithOne().HasForeignKey<ConfiguracionLlm>(x => x.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ---- Obra: raíz del agregado ----

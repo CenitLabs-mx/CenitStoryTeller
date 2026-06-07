@@ -12,6 +12,7 @@ public static class RepositoriesServiceCollectionExtensions
         services.AddScoped<IObraRepository, ObraRepository>();
         services.AddScoped<ICapituloRepository, CapituloRepository>();
         services.AddScoped<IRegistroPasoRepository, RegistroPasoRepository>();
+        services.AddScoped<IConfiguracionLlmRepository, ConfiguracionLlmRepository>();
         services.AddSingleton<IPromptProvider, FilePromptProvider>();
         services.AddScoped<IGeneracionService, GeneracionService>();
         services.AddScoped<IModernizacionService, ModernizacionService>();
