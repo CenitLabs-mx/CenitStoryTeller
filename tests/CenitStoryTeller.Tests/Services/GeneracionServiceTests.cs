@@ -279,4 +279,99 @@ public class GeneracionServiceTests : IDisposable
 
         suite.Db.Dispose();
     }
+
+    // ---- RegenerarConObservacionesAsync ----
+
+    [Fact]
+    public async Task Regenerar_CreaNuevaVersion_ConNumeroIncrementado()
+    {
+        var (_, capId) = Seedear();
+        var (svc, llm, suite) = Servicio();
+
+        // v1 inicial.
+        llm.EncolarTexto("prosa v1");
+        var v1 = await svc.GenerarBorradorAsync(capId, "p");
+
+        // Regeneración → v2.
+        llm.EncolarTexto("prosa v2 corregida");
+        var v2 = await svc.RegenerarConObservacionesAsync(v1.Id, "Ana está muerta pero camina. Corregir.");
+
+        Assert.Equal(2, v2.NumeroVersion);
+        Assert.Equal(v1.CapituloId, v2.CapituloId);
+        Assert.Equal("prosa v2 corregida", v2.Texto);
+        Assert.False(v2.EsFinal);
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task Regenerar_IncluyeTextoAnteriorYObservacionesEnElPrompt()
+    {
+        var (_, capId) = Seedear();
+        var (svc, llm, suite) = Servicio();
+
+        llm.EncolarTexto("la prosa que falló");
+        var v1 = await svc.GenerarBorradorAsync(capId, "p");
+
+        llm.EncolarTexto("regenerada");
+        var observaciones = "OBSERVACIÓN ÚNICA: ajustar el farol";
+        await svc.RegenerarConObservacionesAsync(v1.Id, observaciones);
+
+        // La segunda request debe contener tanto el texto anterior como la observación.
+        var requestRegeneracion = llm.Requests[1];
+        var userMsg = requestRegeneracion.Messages.Single(m => m.Role == LlmRole.User).Content;
+        Assert.Contains("la prosa que falló", userMsg);
+        Assert.Contains(observaciones, userMsg);
+
+        // Usa ModelDraft (es regenerar prosa, no validar).
+        Assert.Equal("draft-m", requestRegeneracion.Model);
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task Regenerar_ObservacionesVacias_Lanza()
+    {
+        var (_, capId) = Seedear();
+        var (svc, llm, suite) = Servicio();
+
+        llm.EncolarTexto("v1");
+        var v1 = await svc.GenerarBorradorAsync(capId, "p");
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => svc.RegenerarConObservacionesAsync(v1.Id, "   "));
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task Regenerar_VersionInexistente_Lanza()
+    {
+        var (svc, _, suite) = Servicio();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.RegenerarConObservacionesAsync(Guid.NewGuid(), "obs"));
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task Regenerar_RegistraPasoAuditable()
+    {
+        var (obraId, capId) = Seedear();
+        var (svc, llm, suite) = Servicio();
+
+        llm.EncolarTexto("v1");
+        var v1 = await svc.GenerarBorradorAsync(capId, "p");
+
+        llm.EncolarTexto("v2");
+        await svc.RegenerarConObservacionesAsync(v1.Id, "ajustar todo");
+
+        // Hay 2 pasos: el de GenerarBorrador y el de Regenerar.
+        var pasos = suite.Db.RegistrosPaso.Where(r => r.ObraId == obraId).ToList();
+        Assert.Equal(2, pasos.Count);
+        Assert.Contains(pasos, p => p.Accion.Contains("Regeneración con observaciones"));
+
+        suite.Db.Dispose();
+    }
 }

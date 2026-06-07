@@ -25,6 +25,15 @@ public interface IGeneracionService
         Guid obraId,
         IProgress<BorradorProgreso>? progreso = null,
         CancellationToken ct = default);
+
+    // Reescribe una versión existente incorporando las observaciones del usuario
+    // (típicamente los hallazgos + parches que produjo la prueba del ácido). El
+    // resultado se guarda como una versión NUEVA — la anterior se conserva para
+    // poder comparar y volver.
+    Task<CapituloVersion> RegenerarConObservacionesAsync(
+        Guid versionAnteriorId,
+        string observaciones,
+        CancellationToken ct = default);
 }
 
 // Snapshot del progreso del auto-borrado: capítulo actual y conteos.
@@ -271,6 +280,70 @@ public sealed class GeneracionService : IGeneracionService
 
         progreso?.Report(new BorradorProgreso(total, total, ""));
         return total;
+    }
+
+    public async Task<CapituloVersion> RegenerarConObservacionesAsync(
+        Guid versionAnteriorId, string observaciones, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(observaciones))
+            throw new ArgumentException("Las observaciones no pueden estar vacías.", nameof(observaciones));
+
+        var versionAnterior = await _capitulos.GetVersionAsync(versionAnteriorId, ct)
+            ?? throw new InvalidOperationException($"No existe la versión {versionAnteriorId}.");
+
+        var system = await _prompts.MotorDeHistoriaAsync(ct);
+        var prompt = ConstruirPromptRegeneracion(versionAnterior, observaciones);
+
+        var opt = await _opts.ObtenerAsync(ct);
+        var llm = await _llmFactory.ObtenerAsync(ct);
+        var resp = await llm.CompleteAsync(new LlmRequest
+        {
+            Model = opt.ModelDraft,
+            Temperature = 0.8,
+            Messages = new[] { LlmMessage.System(system), LlmMessage.User(prompt) }
+        }, ct);
+
+        var numero = await _capitulos.SiguienteNumeroVersionAsync(versionAnterior.CapituloId, ct);
+        var nueva = new CapituloVersion
+        {
+            CapituloId = versionAnterior.CapituloId,
+            NumeroVersion = numero,
+            Modelo = resp.Model,
+            PromptUsado = prompt,
+            Texto = resp.Text,
+            EsFinal = false,
+            CreadoEn = DateTimeOffset.UtcNow
+        };
+        await _capitulos.AgregarVersionAsync(nueva, ct);
+
+        await _pasos.AppendAsync(new RegistroPaso
+        {
+            ObraId = versionAnterior.Capitulo!.ObraId,
+            Agente = "Motor de Historia",
+            Accion = $"Regeneración con observaciones — v{numero} del capítulo {versionAnterior.CapituloId}",
+            Cambios = $"{resp.Text.Length} caracteres generados con {resp.Model}. " +
+                      $"Observaciones del usuario ({observaciones.Length} chars).",
+            Timestamp = DateTimeOffset.UtcNow
+        }, ct);
+
+        await _uow.SaveChangesAsync(ct);
+        return nueva;
+    }
+
+    private static string ConstruirPromptRegeneracion(CapituloVersion anterior, string observaciones)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("La versión anterior de este capítulo no pasó la prueba del ácido.");
+        sb.AppendLine("Vuelve a redactar el capítulo entero respetando el canon de la obra y atendiendo " +
+                      "las observaciones que vienen abajo. Cuida específicamente los puntos señalados; " +
+                      "el resto del capítulo puede mantenerse o reescribirse como mejor sirva al arreglo.");
+        sb.AppendLine();
+        sb.AppendLine("## Versión anterior");
+        sb.AppendLine(anterior.Texto);
+        sb.AppendLine();
+        sb.AppendLine("## Observaciones que debes resolver");
+        sb.AppendLine(observaciones);
+        return sb.ToString();
     }
 
     // Prompt inicial: contextualiza al modelo con el beat objetivo (si lo hay) y
