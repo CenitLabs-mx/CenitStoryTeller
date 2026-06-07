@@ -38,6 +38,7 @@ internal sealed class TestDb : IDisposable
         IObraRepository Obras,
         ICapituloRepository Capitulos,
         IRegistroPasoRepository Pasos,
+        IConfiguracionLlmRepository ConfigLlm,
         IUnitOfWork Uow);
 
     // Construye una Suite (DbContext + repositorios) sobre un DbContext nuevo. Si no se
@@ -50,6 +51,7 @@ internal sealed class TestDb : IDisposable
             new ObraRepository(db, u),
             new CapituloRepository(db),
             new RegistroPasoRepository(db),
+            new ConfiguracionLlmRepository(db),
             new UnitOfWork(db));
     }
 
