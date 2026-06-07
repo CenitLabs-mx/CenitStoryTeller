@@ -3,6 +3,7 @@ using System;
 using CenitStoryTeller.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CenitStoryTeller.Data.Migrations
 {
     [DbContext(typeof(NovelaDbContext))]
-    partial class NovelaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260607011654_AddObraUsuarioId")]
+    partial class AddObraUsuarioId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

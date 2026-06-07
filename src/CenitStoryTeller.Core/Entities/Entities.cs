@@ -32,6 +32,10 @@ public class Obra
     // Soft delete: cuando no es null, la obra queda oculta tras el query filter.
     public DateTimeOffset? EliminadaEn { get; set; }
 
+    // Multi-tenancy: NULL = obra demo, visible para todos pero no mutable.
+    // No-null = obra de un usuario, visible solo para él.
+    public Guid? UsuarioId { get; set; }
+
     public List<Personaje> Personajes { get; set; } = new();
     public List<Ubicacion> Ubicaciones { get; set; } = new();
     public List<Beat> Beats { get; set; } = new();
