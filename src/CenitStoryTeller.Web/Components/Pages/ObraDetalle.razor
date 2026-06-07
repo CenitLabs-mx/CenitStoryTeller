@@ -82,54 +82,7 @@ else
             </MudTabPanel>
 
             <MudTabPanel Text="@($"Ubicaciones ({_obra.Ubicaciones.Count})")" Icon="@Icons.Material.Outlined.Place">
-                <div class="tab-content" style="min-height: 200px;">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="h5 fw-bold mb-0">Fichas de Ubicaciones</h3>
-                    <button class="btn btn-sm btn-primary" @onclick="IniciarNuevaUbicacion">
-                        <span class="bi bi-geo-alt"></span> Añadir Ubicación
-                    </button>
-                </div>
-
-                @if (_obra.Ubicaciones.Count == 0)
-                {
-                    <p class="text-center text-muted my-4"><em>Sin ubicaciones registradas en el canon.</em></p>
-                }
-                else
-                {
-                    <div class="row g-3">
-                        @foreach (var l in _obra.Ubicaciones)
-                        {
-                            <div class="col-md-6">
-                                <div class="card h-100 border">
-                                    @if (l.ImagenBytes is { Length: > 0 })
-                                    {
-                                        <img src="/api/ubicaciones/@(l.Id)/imagen"
-                                             alt="@l.Nombre"
-                                             style="width: 100%; height: 140px; object-fit: cover; border-bottom: 1px solid #dee2e6;" />
-                                    }
-                                    <div class="card-body p-3 d-flex flex-column">
-                                        <h5 class="card-title h6 fw-bold mb-1">@l.Nombre</h5>
-                                        <p class="card-subtitle mb-2 text-muted small">Tipo: @l.Tipo</p>
-                                        @if (!string.IsNullOrWhiteSpace(l.RolEnTrama))
-                                        {
-                                            <div class="small mb-1"><strong>Rol Narrativo:</strong> @l.RolEnTrama</div>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(l.EstadoActual))
-                                        {
-                                            <div class="small text-muted flex-grow-1"><strong>Estado:</strong> @l.EstadoActual</div>
-                                        }
-                                        <div class="d-flex gap-2 mt-3 pt-2 border-top justify-content-end">
-                                            <button class="btn btn-xs btn-outline-primary py-0" @onclick="() => IniciarEditarUbicacion(l)">Editar</button>
-                                            <button class="btn btn-xs btn-outline-danger py-0" @onclick="() => EliminarUbicacion(l)">Eliminar</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-            }
-                </div>
+                <ObraTabUbicaciones Obra="_obra" OnChanged="RecargarDatos" />
             </MudTabPanel>
 
             <MudTabPanel Text="@($"Beats ({_obra.Beats.Count})")" Icon="@Icons.Material.Outlined.Timeline">
@@ -264,61 +217,6 @@ else
         </MudTabs>
     </div>
 
-    <!-- MODAL EDITAR / AÑADIR UBICACIÓN -->
-    @if (_editingUbicacion is not null)
-    {
-        <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title fw-bold">@(_isNewItem ? "Añadir Ubicación" : "Editar Ubicación")</h5>
-                        <button type="button" class="btn-close" @onclick="() => _editingUbicacion = null"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold">Nombre de la Ubicación:</label>
-                            <input class="form-control form-control-sm" @bind="_editingUbicacion.Nombre" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold">Tipo (Edificio/Ciudad/Bosque/Nave/etc):</label>
-                            <input class="form-control form-control-sm" @bind="_editingUbicacion.Tipo" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold">Rol Narrativo / Importancia:</label>
-                            <input class="form-control form-control-sm" @bind="_editingUbicacion.RolEnTrama" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold">Estado Inicial / Actual:</label>
-                            <input class="form-control form-control-sm" @bind="_editingUbicacion.EstadoActual" />
-                        </div>
-                        <div class="mb-2 border-top pt-3 mt-3">
-                            <label class="form-label small fw-bold">Imagen de la ubicación (JPEG/PNG/WebP/GIF, máx 2 MB):</label>
-                            <InputFile OnChange="OnImagenUbicacionSeleccionada" class="form-control form-control-sm" accept="image/*" />
-                            @if (!string.IsNullOrEmpty(_imagenErr))
-                            {
-                                <div class="text-danger small mt-1">@_imagenErr</div>
-                            }
-                            @if (_editingUbicacion.ImagenBytes is { Length: > 0 } uBytes)
-                            {
-                                <div class="mt-2">
-                                    <img src="@DataUrl(uBytes, _editingUbicacion.ImagenContentType)"
-                                         style="max-height: 120px; max-width: 200px; border-radius: 8px; object-fit: cover;" />
-                                    <button class="btn btn-link btn-sm text-danger" @onclick="() => { _editingUbicacion.ImagenBytes = null; _editingUbicacion.ImagenContentType = null; }">
-                                        Quitar
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-secondary" @onclick="() => _editingUbicacion = null">Cancelar</button>
-                        <button type="button" class="btn btn-sm btn-primary" @onclick="GuardarUbicacion">Guardar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
     <!-- MODAL EDITAR / AÑADIR BEAT -->
     @if (_editingBeat is not null)
     {
@@ -382,7 +280,6 @@ else
     private List<BreadcrumbItem> _crumbs = new();
 
     // Estados de edición
-    private Ubicacion? _editingUbicacion;
     private Beat? _editingBeat;
     private bool _isNewItem = false;
 
@@ -402,70 +299,6 @@ else
             new BreadcrumbItem("Inicio", "/"),
             new BreadcrumbItem(_obra?.Titulo ?? "Obra", null, disabled: true)
         };
-    }
-
-    // ----- UBICACIONES -----
-    private void IniciarNuevaUbicacion()
-    {
-        _isNewItem = true;
-        _editingUbicacion = new Ubicacion
-        {
-            ObraId = ObraId,
-            Canon = CanonNivel.Borrador
-        };
-    }
-
-    private void IniciarEditarUbicacion(Ubicacion l)
-    {
-        _isNewItem = false;
-        _imagenErr = "";
-        _editingUbicacion = new Ubicacion
-        {
-            Id = l.Id,
-            ObraId = l.ObraId,
-            Nombre = l.Nombre,
-            Tipo = l.Tipo,
-            RolEnTrama = l.RolEnTrama,
-            EstadoActual = l.EstadoActual,
-            Canon = l.Canon,
-            ImagenBytes = l.ImagenBytes,
-            ImagenContentType = l.ImagenContentType
-        };
-    }
-
-    private async Task GuardarUbicacion()
-    {
-        if (_editingUbicacion is null || string.IsNullOrWhiteSpace(_editingUbicacion.Nombre)) return;
-
-        if (_isNewItem)
-        {
-            _editingUbicacion.Id = Guid.NewGuid();
-            await Db.Ubicaciones.AddAsync(_editingUbicacion);
-        }
-        else
-        {
-            var lDb = await Db.Ubicaciones.FirstOrDefaultAsync(x => x.Id == _editingUbicacion.Id);
-            if (lDb is not null)
-            {
-                lDb.Nombre = _editingUbicacion.Nombre;
-                lDb.Tipo = _editingUbicacion.Tipo;
-                lDb.RolEnTrama = _editingUbicacion.RolEnTrama;
-                lDb.EstadoActual = _editingUbicacion.EstadoActual;
-                lDb.ImagenBytes = _editingUbicacion.ImagenBytes;
-                lDb.ImagenContentType = _editingUbicacion.ImagenContentType;
-            }
-        }
-
-        await Db.SaveChangesAsync();
-        _editingUbicacion = null;
-        await RecargarDatos();
-    }
-
-    private async Task EliminarUbicacion(Ubicacion l)
-    {
-        Db.Ubicaciones.Remove(l);
-        await Db.SaveChangesAsync();
-        await RecargarDatos();
     }
 
     // ----- BEATS -----
@@ -591,32 +424,4 @@ else
         await RecargarDatos();
     }
 
-    // ----- IMÁGENES -----
-    private const long MaxImagenBytes = 2 * 1024 * 1024;
-    private static readonly string[] TiposImagenPermitidos = { "image/jpeg", "image/png", "image/webp", "image/gif" };
-    private string _imagenErr = "";
-
-    private async Task OnImagenUbicacionSeleccionada(InputFileChangeEventArgs e)
-    {
-        _imagenErr = "";
-        if (_editingUbicacion is null) return;
-
-        var f = e.File;
-        if (f.Size > MaxImagenBytes) { _imagenErr = $"Imagen demasiado grande (máx {MaxImagenBytes / 1024 / 1024} MB)."; return; }
-        if (!TiposImagenPermitidos.Contains(f.ContentType, StringComparer.OrdinalIgnoreCase))
-        {
-            _imagenErr = $"Tipo no soportado: {f.ContentType}. Usa JPEG, PNG, WebP o GIF.";
-            return;
-        }
-
-        using var stream = f.OpenReadStream(MaxImagenBytes);
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        _editingUbicacion.ImagenBytes = ms.ToArray();
-        _editingUbicacion.ImagenContentType = f.ContentType;
-    }
-
-    // data URL para preview sin tener que persistir todavía la imagen.
-    private static string DataUrl(byte[] bytes, string? contentType)
-        => $"data:{contentType ?? "application/octet-stream"};base64,{Convert.ToBase64String(bytes)}";
 }

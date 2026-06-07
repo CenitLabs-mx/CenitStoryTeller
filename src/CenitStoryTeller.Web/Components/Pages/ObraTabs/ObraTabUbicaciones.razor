@@ -1,0 +1,198 @@
+@using Microsoft.EntityFrameworkCore
+@using CenitStoryTeller.Data
+@using CenitStoryTeller.Core.Entities
+@inject NovelaDbContext Db
+
+@if (Obra is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+    return;
+}
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h6">Ubicaciones</MudText>
+    <MudButton OnClick="IniciarNueva" Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Outlined.AddLocation">
+        Añadir ubicación
+    </MudButton>
+</MudStack>
+
+@if (Obra.Ubicaciones.Count == 0)
+{
+    <MudText Align="Align.Center" Color="Color.Secondary" Class="my-4">
+        <em>Sin ubicaciones registradas en el canon.</em>
+    </MudText>
+}
+else
+{
+    <MudGrid Spacing="3">
+        @foreach (var l in Obra.Ubicaciones)
+        {
+            <MudItem xs="12" md="6">
+                <MudCard Class="h-100">
+                    @if (l.ImagenBytes is { Length: > 0 })
+                    {
+                        <MudCardMedia Image="@($"/api/ubicaciones/{l.Id}/imagen")" Height="140" />
+                    }
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle1"><b>@l.Nombre</b></MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Tipo: @l.Tipo</MudText>
+                        @if (!string.IsNullOrWhiteSpace(l.RolEnTrama))
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-2"><strong>Rol narrativo:</strong> @l.RolEnTrama</MudText>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(l.EstadoActual))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                <strong>Estado:</strong> @l.EstadoActual
+                            </MudText>
+                        }
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudSpacer />
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                                       OnClick="() => IniciarEditar(l)" />
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                       OnClick="() => Eliminar(l)" />
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<MudDialog @bind-Visible="_dialogOpen" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true })">
+    <TitleContent>@(_isNew ? "Añadir ubicación" : "Editar ubicación")</TitleContent>
+    <DialogContent>
+        @if (_editing is not null)
+        {
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="_editing.Nombre" Label="Nombre" Required="true" />
+                <MudTextField @bind-Value="_editing.Tipo" Label="Tipo (edificio, ciudad, bosque, nave, …)" />
+                <MudTextField @bind-Value="_editing.RolEnTrama" Label="Rol narrativo / importancia" Lines="2" />
+                <MudTextField @bind-Value="_editing.EstadoActual" Label="Estado inicial / actual" Lines="2" />
+
+                <MudDivider />
+                <MudText Typo="Typo.caption">Imagen (JPEG/PNG/WebP/GIF, máx 2 MB)</MudText>
+                <InputFile OnChange="OnImagen" accept="image/*" />
+                @if (!string.IsNullOrEmpty(_imagenErr))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@_imagenErr</MudAlert>
+                }
+                @if (_editing.ImagenBytes is { Length: > 0 } bytes)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <img src="@DataUrl(bytes, _editing.ImagenContentType)"
+                             style="max-height: 140px; max-width: 220px; border-radius: 8px; object-fit: cover;" />
+                        <MudButton OnClick="QuitarImagen" Variant="Variant.Text" Color="Color.Error" Size="Size.Small">
+                            Quitar
+                        </MudButton>
+                    </MudStack>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _dialogOpen = false">Cancelar</MudButton>
+        <MudButton OnClick="Guardar" Color="Color.Primary" Variant="Variant.Filled">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public Obra? Obra { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private Ubicacion? _editing;
+    private bool _isNew;
+    private bool _dialogOpen;
+    private string _imagenErr = "";
+
+    private const long MaxImagenBytes = 2 * 1024 * 1024;
+    private static readonly string[] TiposImagenPermitidos = { "image/jpeg", "image/png", "image/webp", "image/gif" };
+
+    private void IniciarNueva()
+    {
+        if (Obra is null) return;
+        _isNew = true;
+        _imagenErr = "";
+        _editing = new Ubicacion { ObraId = Obra.Id, Canon = CanonNivel.Borrador };
+        _dialogOpen = true;
+    }
+
+    private void IniciarEditar(Ubicacion l)
+    {
+        _isNew = false;
+        _imagenErr = "";
+        _editing = new Ubicacion
+        {
+            Id = l.Id, ObraId = l.ObraId, Nombre = l.Nombre, Tipo = l.Tipo,
+            RolEnTrama = l.RolEnTrama, EstadoActual = l.EstadoActual, Canon = l.Canon,
+            ImagenBytes = l.ImagenBytes, ImagenContentType = l.ImagenContentType
+        };
+        _dialogOpen = true;
+    }
+
+    private async Task Guardar()
+    {
+        if (_editing is null || string.IsNullOrWhiteSpace(_editing.Nombre)) return;
+
+        if (_isNew)
+        {
+            await Db.Ubicaciones.AddAsync(_editing);
+        }
+        else
+        {
+            var lDb = await Db.Ubicaciones.FirstOrDefaultAsync(x => x.Id == _editing.Id);
+            if (lDb is not null)
+            {
+                lDb.Nombre = _editing.Nombre;
+                lDb.Tipo = _editing.Tipo;
+                lDb.RolEnTrama = _editing.RolEnTrama;
+                lDb.EstadoActual = _editing.EstadoActual;
+                lDb.ImagenBytes = _editing.ImagenBytes;
+                lDb.ImagenContentType = _editing.ImagenContentType;
+            }
+        }
+        await Db.SaveChangesAsync();
+        _dialogOpen = false;
+        _editing = null;
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task Eliminar(Ubicacion l)
+    {
+        Db.Ubicaciones.Remove(l);
+        await Db.SaveChangesAsync();
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task OnImagen(InputFileChangeEventArgs e)
+    {
+        _imagenErr = "";
+        if (_editing is null) return;
+
+        var f = e.File;
+        if (f.Size > MaxImagenBytes) { _imagenErr = $"Imagen demasiado grande (máx {MaxImagenBytes / 1024 / 1024} MB)."; return; }
+        if (!TiposImagenPermitidos.Contains(f.ContentType, StringComparer.OrdinalIgnoreCase))
+        {
+            _imagenErr = $"Tipo no soportado: {f.ContentType}.";
+            return;
+        }
+
+        using var stream = f.OpenReadStream(MaxImagenBytes);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        _editing.ImagenBytes = ms.ToArray();
+        _editing.ImagenContentType = f.ContentType;
+    }
+
+    private void QuitarImagen()
+    {
+        if (_editing is null) return;
+        _editing.ImagenBytes = null;
+        _editing.ImagenContentType = null;
+    }
+
+    private static string DataUrl(byte[] bytes, string? contentType)
+        => $"data:{contentType ?? "application/octet-stream"};base64,{Convert.ToBase64String(bytes)}";
+}
