@@ -171,4 +171,112 @@ public class GeneracionServiceTests : IDisposable
             return Task.FromResult(_r);
         }
     }
+
+    // ---- GenerarBorradoresPendientesAsync ----
+
+    private Guid SeedearObraConCapitulos(int cantidad, Action<int, Capitulo>? hookExtra = null)
+    {
+        using var seed = _test.NuevoCtx();
+        var obra = new Obra { Id = Guid.NewGuid(), Titulo = "T", Intake = IntakeTipo.Idea };
+        for (var i = 1; i <= cantidad; i++)
+        {
+            var cap = new Capitulo
+            {
+                Id = Guid.NewGuid(),
+                Titulo = $"Cap {i}",
+                Orden = i,
+                ObraId = obra.Id,
+                Estado = CapituloEstado.Esquema
+            };
+            hookExtra?.Invoke(i, cap);
+            obra.Capitulos.Add(cap);
+        }
+        seed.Obras.Add(obra);
+        seed.SaveChanges();
+        return obra.Id;
+    }
+
+    [Fact]
+    public async Task GenerarBorradoresPendientes_GeneraUnaVersionPorCapitulo()
+    {
+        var obraId = SeedearObraConCapitulos(3);
+        var (svc, llm, suite) = Servicio();
+        llm.EncolarTexto("prosa 1").EncolarTexto("prosa 2").EncolarTexto("prosa 3");
+
+        var creados = await svc.GenerarBorradoresPendientesAsync(obraId);
+
+        Assert.Equal(3, creados);
+        Assert.Equal(3, suite.Db.CapituloVersiones.Count());
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task GenerarBorradoresPendientes_OmiteCapitulosConVersionExistente()
+    {
+        // Tres capítulos; al primero le pre-cargamos una versión. Solo se deben
+        // generar 2 borradores nuevos.
+        var obraId = SeedearObraConCapitulos(3);
+        var primerCap = _test.NuevoCtx().Capitulos.OrderBy(c => c.Orden).First();
+        using (var pre = _test.NuevoCtx())
+        {
+            pre.CapituloVersiones.Add(new CapituloVersion
+            {
+                Id = Guid.NewGuid(),
+                CapituloId = primerCap.Id,
+                NumeroVersion = 1,
+                Modelo = "pre",
+                Texto = "ya existía",
+                CreadoEn = DateTimeOffset.UtcNow
+            });
+            pre.SaveChanges();
+        }
+
+        var (svc, llm, suite) = Servicio();
+        llm.EncolarTexto("prosa 2").EncolarTexto("prosa 3");
+
+        var creados = await svc.GenerarBorradoresPendientesAsync(obraId);
+
+        Assert.Equal(2, creados);
+        Assert.Equal(3, suite.Db.CapituloVersiones.Count()); // 1 pre + 2 nuevos
+        Assert.Equal(2, llm.Requests.Count);
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task GenerarBorradoresPendientes_ReportaProgresoPorCapitulo()
+    {
+        var obraId = SeedearObraConCapitulos(2);
+        var (svc, llm, suite) = Servicio();
+        llm.EncolarTexto("p1").EncolarTexto("p2");
+
+        var reportes = new List<BorradorProgreso>();
+        var progress = new Progress<BorradorProgreso>(p => reportes.Add(p));
+
+        await svc.GenerarBorradoresPendientesAsync(obraId, progress);
+
+        // Un Report al iniciar cada cap + uno al terminar todo => 3 reportes mínimos.
+        // Progress<T> postea en el SynchronizationContext capturado; en xunit con
+        // ExecutionContext fluyendo, los reportes llegan antes de que await retorne.
+        Assert.True(reportes.Count >= 2, $"Esperaba al menos 2 reportes, llegaron {reportes.Count}");
+        Assert.Contains(reportes, r => r.CapituloActual == "Cap 1");
+        Assert.Contains(reportes, r => r.CapituloActual == "Cap 2");
+        Assert.Contains(reportes, r => r.Hecho == r.Total && r.Total == 2);
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task GenerarBorradoresPendientes_SinPendientes_DevuelveCero()
+    {
+        var obraId = SeedearObraConCapitulos(0);
+        var (svc, _, suite) = Servicio();
+
+        var creados = await svc.GenerarBorradoresPendientesAsync(obraId);
+
+        Assert.Equal(0, creados);
+
+        suite.Db.Dispose();
+    }
 }

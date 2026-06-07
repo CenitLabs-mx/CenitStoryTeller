@@ -18,7 +18,17 @@ public interface IGeneracionService
     // Corre la prueba del ácido sobre una versión con ModelReview y guarda el veredicto.
     Task<PruebaAcido> CorrerPruebaAcidoAsync(Guid capituloVersionId, CancellationToken ct = default);
 
+    // Genera v1 para cada capítulo de la obra que aún no tenga versiones. Síncrono:
+    // procesa de uno en uno y reporta progreso por IProgress<>. Devuelve cuántos se
+    // generaron (0 si todos ya tenían versión).
+    Task<int> GenerarBorradoresPendientesAsync(
+        Guid obraId,
+        IProgress<BorradorProgreso>? progreso = null,
+        CancellationToken ct = default);
 }
+
+// Snapshot del progreso del auto-borrado: capítulo actual y conteos.
+public sealed record BorradorProgreso(int Hecho, int Total, string CapituloActual);
 
 public sealed class GeneracionService : IGeneracionService
 {
@@ -218,4 +228,70 @@ public sealed class GeneracionService : IGeneracionService
         return string.Join("\n", partes);
     }
 
+    public async Task<int> GenerarBorradoresPendientesAsync(
+        Guid obraId,
+        IProgress<BorradorProgreso>? progreso = null,
+        CancellationToken ct = default)
+    {
+        var obra = await _obras.GetConCanonAsync(obraId, ct)
+            ?? throw new InvalidOperationException($"No existe la obra {obraId}.");
+
+        // Pendientes: capítulos sin ninguna versión todavía. Los que ya tienen v1
+        // (porque el usuario regeneró manualmente o porque ya pasamos por aquí) se
+        // saltan — esto hace la operación idempotente y reanudable.
+        var capitulos = obra.Capitulos
+            .OrderBy(c => c.Orden)
+            .ToList();
+
+        var pendientes = new List<Capitulo>();
+        foreach (var c in capitulos)
+        {
+            var conV = await _capitulos.GetConVersionesAsync(c.Id, ct);
+            if (conV is null || conV.Versiones.Count == 0)
+                pendientes.Add(c);
+        }
+
+        var total = pendientes.Count;
+        if (total == 0)
+        {
+            progreso?.Report(new BorradorProgreso(0, 0, ""));
+            return 0;
+        }
+
+        for (var i = 0; i < pendientes.Count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var cap = pendientes[i];
+
+            progreso?.Report(new BorradorProgreso(i, total, cap.Titulo));
+
+            var prompt = ConstruirPromptInicial(obra, cap);
+            await GenerarBorradorAsync(cap.Id, prompt, ct);
+        }
+
+        progreso?.Report(new BorradorProgreso(total, total, ""));
+        return total;
+    }
+
+    // Prompt inicial: contextualiza al modelo con el beat objetivo (si lo hay) y
+    // el orden del capítulo. El system-prompt (motor-de-historia.md) ya da el
+    // marco general; aquí va el "qué escribir ahora".
+    private static string ConstruirPromptInicial(Obra obra, Capitulo cap)
+    {
+        var beatObjetivo = cap.BeatObjetivoId is Guid bid
+            ? obra.Beats.FirstOrDefault(b => b.Id == bid)
+            : null;
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Capítulo {cap.Orden}: {cap.Titulo}.");
+        if (beatObjetivo is not null)
+        {
+            sb.AppendLine($"Beat objetivo: {beatObjetivo.Titulo} " +
+                          $"(acto {beatObjetivo.Acto}, función {beatObjetivo.Funcion}).");
+            if (!string.IsNullOrWhiteSpace(beatObjetivo.Descripcion))
+                sb.AppendLine($"Descripción del beat: {beatObjetivo.Descripcion}");
+        }
+        sb.AppendLine("Escribe una primera versión del capítulo respetando el canon de la obra.");
+        return sb.ToString();
+    }
 }
