@@ -3,8 +3,10 @@
 @attribute [Authorize]
 @using Microsoft.EntityFrameworkCore
 @using CenitStoryTeller.Data
+@using CenitStoryTeller.Data.Services
 @using CenitStoryTeller.Core.Entities
 @inject IObraRepository Obras
+@inject IBeatService BeatSvc
 @inject NovelaDbContext Db
 @inject NavigationManager Nav
 
@@ -189,19 +191,38 @@ else
                         <table class="table table-sm table-striped align-middle small">
                             <thead>
                                 <tr>
-                                    <th>Ord.</th>
+                                    <th style="width: 80px;">Orden</th>
                                     <th>Título</th>
                                     <th>Acto</th>
                                     <th>Función</th>
                                     <th>Descripción</th>
-                                    <th class="text-end">Acciones</th>
+                                    <th class="text-end" style="width: 180px;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var b in _obra.Beats.OrderBy(x => x.Orden))
+                                @{ var orderedBeats = _obra.Beats.OrderBy(x => x.Orden).ToList(); }
+                                @for (var i = 0; i < orderedBeats.Count; i++)
                                 {
+                                    var b = orderedBeats[i];
+                                    var posicionInsercion = b.Orden;
+                                    <tr class="border-bottom-0">
+                                        <td colspan="6" class="p-0 text-center" style="background: transparent;">
+                                            <button class="btn btn-link btn-xs text-muted py-0" style="font-size: 0.7rem;"
+                                                    @onclick="() => IniciarInsertarBeatEn(posicionInsercion)">
+                                                <span class="bi bi-plus-circle"></span> Insertar aquí
+                                            </button>
+                                        </td>
+                                    </tr>
                                     <tr>
-                                        <td>@b.Orden</td>
+                                        <td>
+                                            <span class="fw-bold me-1">@b.Orden</span>
+                                            <button class="btn btn-xs btn-outline-secondary py-0 px-1"
+                                                    @onclick="() => MoverBeat(b.Id, -1)"
+                                                    disabled="@(i == 0)" title="Subir">↑</button>
+                                            <button class="btn btn-xs btn-outline-secondary py-0 px-1"
+                                                    @onclick="() => MoverBeat(b.Id, +1)"
+                                                    disabled="@(i == orderedBeats.Count - 1)" title="Bajar">↓</button>
+                                        </td>
                                         <td><strong>@b.Titulo</strong></td>
                                         <td><span class="badge bg-light text-dark border">@b.Acto</span></td>
                                         <td><span class="badge bg-light text-primary border">@b.Funcion</span></td>
@@ -212,6 +233,14 @@ else
                                         </td>
                                     </tr>
                                 }
+                                <tr class="border-bottom-0">
+                                    <td colspan="6" class="p-0 text-center" style="background: transparent;">
+                                        <button class="btn btn-link btn-xs text-muted py-0" style="font-size: 0.7rem;"
+                                                @onclick="() => IniciarInsertarBeatEn(orderedBeats.Count + 1)">
+                                            <span class="bi bi-plus-circle"></span> Insertar al final
+                                        </button>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -585,15 +614,39 @@ else
     }
 
     // ----- BEATS -----
+    // Cuando es null, el guardado es un "añadir al final" tradicional. Cuando
+    // tiene valor, el guardado va por BeatService.InsertarEnPosicionAsync con
+    // esa posición.
+    private int? _insertarEnPosicion;
+
     private void IniciarNuevoBeat()
     {
         _isNewItem = true;
+        _insertarEnPosicion = null;
         _editingBeat = new Beat
         {
             ObraId = ObraId,
             Orden = _obra?.Beats.Count + 1 ?? 1,
             Estado = BeatEstado.Pendiente
         };
+    }
+
+    private void IniciarInsertarBeatEn(int posicion)
+    {
+        _isNewItem = true;
+        _insertarEnPosicion = posicion;
+        _editingBeat = new Beat
+        {
+            ObraId = ObraId,
+            Orden = posicion,
+            Estado = BeatEstado.Pendiente
+        };
+    }
+
+    private async Task MoverBeat(Guid beatId, int delta)
+    {
+        await BeatSvc.MoverAsync(beatId, delta);
+        await RecargarDatos();
     }
 
     private void IniciarEditarBeat(Beat b)
@@ -618,6 +671,17 @@ else
 
         if (_isNewItem)
         {
+            if (_insertarEnPosicion is int pos)
+            {
+                // Inserción en medio: el servicio renumera beats y capítulos
+                // posteriores, y crea el capítulo nuevo en la misma posición.
+                await BeatSvc.InsertarEnPosicionAsync(ObraId, pos, _editingBeat);
+                _editingBeat = null;
+                _insertarEnPosicion = null;
+                await RecargarDatos();
+                return;
+            }
+
             _editingBeat.Id = Guid.NewGuid();
             await Db.Beats.AddAsync(_editingBeat);
 

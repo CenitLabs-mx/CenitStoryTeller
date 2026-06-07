@@ -160,4 +160,73 @@ public class BeatServiceTests : IDisposable
 
         suite.Db.Dispose();
     }
+
+    // Variante que también siembra un capítulo por cada beat alineado por Orden.
+    private Guid SeedearConCapitulos(int cantidad)
+    {
+        using var seed = _test.NuevoCtx();
+        var obra = new Obra { Id = Guid.NewGuid(), Titulo = "T", Intake = IntakeTipo.Idea };
+        for (var i = 1; i <= cantidad; i++)
+        {
+            obra.Beats.Add(new Beat
+            {
+                Id = Guid.NewGuid(), ObraId = obra.Id, Titulo = $"B{i}",
+                Orden = i, Acto = Acto.Acto1, Funcion = FuncionNarrativa.Setup,
+                Estado = BeatEstado.Pendiente
+            });
+            obra.Capitulos.Add(new Capitulo
+            {
+                Id = Guid.NewGuid(), ObraId = obra.Id,
+                Titulo = $"Cap {i}", Orden = i, Estado = CapituloEstado.Borrador
+            });
+        }
+        seed.Obras.Add(obra);
+        seed.SaveChanges();
+        return obra.Id;
+    }
+
+    [Fact]
+    public async Task Insertar_TambienCreaCapituloYRenumeraCapitulosPosteriores()
+    {
+        var obraId = SeedearConCapitulos(3);
+        var (svc, suite) = Servicio();
+
+        await svc.InsertarEnPosicionAsync(obraId, 2,
+            new Beat { Titulo = "NUEVO", Estado = BeatEstado.Pendiente });
+
+        using var ctx = _test.NuevoCtx();
+        var caps = ctx.Capitulos.Where(c => c.ObraId == obraId)
+            .OrderBy(c => c.Orden)
+            .Select(c => new ValueTuple<string, int>(c.Titulo, c.Orden))
+            .ToList();
+        Assert.Equal(new[]
+        {
+            ("Cap 1", 1),
+            ("NUEVO", 2),     // capítulo nuevo creado con el título del beat
+            ("Cap 2", 3),
+            ("Cap 3", 4),
+        }, caps);
+
+        suite.Db.Dispose();
+    }
+
+    [Fact]
+    public async Task Mover_TambienIntercambiaCapitulosAlineados()
+    {
+        var obraId = SeedearConCapitulos(3);
+        var (svc, suite) = Servicio();
+        var b1 = suite.Db.Beats.Single(b => b.ObraId == obraId && b.Titulo == "B1");
+
+        await svc.MoverAsync(b1.Id, +1);
+
+        using var ctx = _test.NuevoCtx();
+        var caps = ctx.Capitulos.Where(c => c.ObraId == obraId)
+            .OrderBy(c => c.Orden)
+            .Select(c => c.Titulo)
+            .ToList();
+        // Cap 2 sube al Orden 1, Cap 1 baja al 2 — espejo del swap de beats.
+        Assert.Equal(new[] { "Cap 2", "Cap 1", "Cap 3" }, caps);
+
+        suite.Db.Dispose();
+    }
 }

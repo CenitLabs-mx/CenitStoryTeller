@@ -47,9 +47,25 @@ public sealed class BeatService : IBeatService
         foreach (var b in existentes.Where(b => b.Orden >= clamped))
             b.Orden++;
 
+        // Capítulos mantienen alineación con beats por Orden — corremos también
+        // los suyos para que el cap nuevo (que creamos abajo) ocupe el hueco.
+        var capsExistentes = await _db.Capitulos
+            .Where(c => c.ObraId == obraId)
+            .ToListAsync(ct);
+        foreach (var c in capsExistentes.Where(c => c.Orden >= clamped))
+            c.Orden++;
+
         nuevo.ObraId = obraId;
         nuevo.Orden = clamped;
         await _db.Beats.AddAsync(nuevo, ct);
+
+        await _db.Capitulos.AddAsync(new Capitulo
+        {
+            ObraId = obraId,
+            Orden = clamped,
+            Titulo = nuevo.Titulo,
+            Estado = CapituloEstado.Borrador
+        }, ct);
 
         await _uow.SaveChangesAsync(ct);
         return nuevo;
@@ -71,6 +87,14 @@ public sealed class BeatService : IBeatService
         // Intercambio. Sin colisión transitoria porque cada beat tiene su propia
         // fila — el orden de SaveChanges aplica ambas actualizaciones a la vez.
         (beat.Orden, vecino.Orden) = (vecino.Orden, beat.Orden);
+
+        // Mismo intercambio en capítulos si están alineados por Orden.
+        var capBeat = await _db.Capitulos
+            .FirstOrDefaultAsync(c => c.ObraId == beat.ObraId && c.Orden == vecino.Orden, ct);
+        var capVecino = await _db.Capitulos
+            .FirstOrDefaultAsync(c => c.ObraId == beat.ObraId && c.Orden == beat.Orden, ct);
+        if (capBeat is not null && capVecino is not null)
+            (capBeat.Orden, capVecino.Orden) = (capVecino.Orden, capBeat.Orden);
 
         await _uow.SaveChangesAsync(ct);
         return true;
