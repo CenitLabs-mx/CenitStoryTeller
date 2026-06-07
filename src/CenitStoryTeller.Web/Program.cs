@@ -1,3 +1,4 @@
+using CenitStoryTeller.Web;
 using CenitStoryTeller.Web.Components;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Core.AcidTests;
@@ -17,6 +18,9 @@ builder.Services.AddNovelaLlm(builder.Configuration);
 builder.Services.AddNovelaAcidTests();
 builder.Services.AddNovelaData(builder.Configuration);
 builder.Services.AddNovelaRepositories();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
 // Identity sobre NovelaDbContext. Reglas de password relajadas en dev — en prod
 // se endurecen vía configuración. Email confirmation requerido: el flujo de

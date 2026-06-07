@@ -31,7 +31,7 @@ internal sealed class TestDb : IDisposable
         return new TestDb(conn, opts);
     }
 
-    public NovelaDbContext NuevoCtx() => new(_opts);
+    public NovelaDbContext NuevoCtx(ICurrentUser? user = null) => new(_opts, user);
 
     public sealed record Suite(
         NovelaDbContext Db,
@@ -40,13 +40,14 @@ internal sealed class TestDb : IDisposable
         IRegistroPasoRepository Pasos,
         IUnitOfWork Uow);
 
-    // Construye una Suite (DbContext + repositorios) sobre un DbContext nuevo. El llamador
-    // debe disponer Suite.Db al terminar (o usar la TestDb completa con `using`).
-    public Suite NuevaSuite()
+    // Construye una Suite (DbContext + repositorios) sobre un DbContext nuevo. Si no se
+    // pasa usuario, se usa AnonymousCurrentUser (solo ve demos, no puede mutar).
+    public Suite NuevaSuite(ICurrentUser? user = null)
     {
-        var db = NuevoCtx();
+        var u = user ?? new AnonymousCurrentUser();
+        var db = NuevoCtx(u);
         return new Suite(db,
-            new ObraRepository(db),
+            new ObraRepository(db, u),
             new CapituloRepository(db),
             new RegistroPasoRepository(db),
             new UnitOfWork(db));

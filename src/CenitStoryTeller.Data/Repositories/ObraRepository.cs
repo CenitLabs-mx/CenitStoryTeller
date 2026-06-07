@@ -23,7 +23,12 @@ public interface IObraRepository
 public sealed class ObraRepository : IObraRepository
 {
     private readonly NovelaDbContext _db;
-    public ObraRepository(NovelaDbContext db) => _db = db;
+    private readonly ICurrentUser _currentUser;
+    public ObraRepository(NovelaDbContext db, ICurrentUser currentUser)
+    {
+        _db = db;
+        _currentUser = currentUser;
+    }
 
     public Task<Obra?> GetAsync(Guid id, CancellationToken ct = default) =>
         _db.Obras.FirstOrDefaultAsync(o => o.Id == id, ct);
@@ -43,15 +48,26 @@ public sealed class ObraRepository : IObraRepository
     public async Task<IReadOnlyList<Obra>> ListAsync(CancellationToken ct = default) =>
         await _db.Obras.AsNoTracking().OrderBy(o => o.Titulo).ToListAsync(ct);
 
-    public async Task AddAsync(Obra obra, CancellationToken ct = default) =>
+    // Nueva obra: estampa UsuarioId con el usuario autenticado actual. Si no hay
+    // usuario (background, --migrate, seeder), queda NULL = obra demo.
+    public async Task AddAsync(Obra obra, CancellationToken ct = default)
+    {
+        if (obra.UsuarioId is null && _currentUser.Id is Guid uid)
+            obra.UsuarioId = uid;
         await _db.Obras.AddAsync(obra, ct);
+    }
 
-    public void Remove(Obra obra) => _db.Obras.Remove(obra);
+    public void Remove(Obra obra)
+    {
+        AssertMutable(obra);
+        _db.Obras.Remove(obra);
+    }
 
     public async Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)
     {
         var obra = await _db.Obras.FirstOrDefaultAsync(o => o.Id == id, ct);
         if (obra is null) return false;
+        AssertMutable(obra);
         obra.EliminadaEn = DateTimeOffset.UtcNow;
         return true;
     }
@@ -61,7 +77,18 @@ public sealed class ObraRepository : IObraRepository
     {
         var obra = await _db.Obras.IgnoreQueryFilters().FirstOrDefaultAsync(o => o.Id == id, ct);
         if (obra is null) return false;
+        AssertMutable(obra);
         obra.EliminadaEn = null;
         return true;
+    }
+
+    // Las obras demo (UsuarioId == null) son de solo lectura para cualquier usuario.
+    // Solo el dueño puede mutar; el resto recibe UnauthorizedAccessException.
+    private void AssertMutable(Obra obra)
+    {
+        if (obra.UsuarioId is null)
+            throw new UnauthorizedAccessException("Las obras demo son de solo lectura.");
+        if (obra.UsuarioId != _currentUser.Id)
+            throw new UnauthorizedAccessException("Esta obra pertenece a otro usuario.");
     }
 }
