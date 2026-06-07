@@ -1,10 +1,12 @@
 using System;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using CenitStoryTeller.Core.Entities;
+using CenitStoryTeller.Data.Entities;
 
 namespace CenitStoryTeller.Data;
 
-public sealed class NovelaDbContext : DbContext
+public sealed class NovelaDbContext : IdentityDbContext<Usuario, Microsoft.AspNetCore.Identity.IdentityRole<Guid>, Guid>
 {
     public NovelaDbContext(DbContextOptions<NovelaDbContext> options) : base(options) { }
 
@@ -26,6 +28,14 @@ public sealed class NovelaDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        // IdentityDbContext configura las tablas AspNetUsers/Roles/etc.
+        base.OnModelCreating(b);
+
+        b.Entity<Usuario>(e =>
+        {
+            e.Property(u => u.NombreDisplay).HasMaxLength(200);
+        });
+
         // ---- Obra: raíz del agregado ----
         b.Entity<Obra>(e =>
         {

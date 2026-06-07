@@ -2,7 +2,9 @@ using CenitStoryTeller.Web.Components;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Core.AcidTests;
 using CenitStoryTeller.Data;
+using CenitStoryTeller.Data.Entities;
 using CenitStoryTeller.Data.Seeding;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,29 @@ builder.Services.AddNovelaLlm(builder.Configuration);
 builder.Services.AddNovelaAcidTests();
 builder.Services.AddNovelaData(builder.Configuration);
 builder.Services.AddNovelaRepositories();
+
+// Identity sobre NovelaDbContext. Reglas de password relajadas en dev — en prod
+// se endurecen vía configuración. Email confirmation requerido: el flujo de
+// registro envía un link de confirmación antes de habilitar login.
+builder.Services.AddIdentity<Usuario, IdentityRole<Guid>>(o =>
+    {
+        o.SignIn.RequireConfirmedEmail = true;
+        o.Password.RequireDigit = true;
+        o.Password.RequireLowercase = true;
+        o.Password.RequireUppercase = false;
+        o.Password.RequireNonAlphanumeric = false;
+        o.Password.RequiredLength = 8;
+        o.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<NovelaDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(o =>
+{
+    o.LoginPath = "/login";
+    o.LogoutPath = "/logout";
+    o.AccessDeniedPath = "/login";
+});
 
 var app = builder.Build();
 
@@ -45,6 +70,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
