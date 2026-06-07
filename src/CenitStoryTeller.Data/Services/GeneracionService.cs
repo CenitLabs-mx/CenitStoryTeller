@@ -49,6 +49,7 @@ public sealed class GeneracionService : IGeneracionService
     private readonly IRegistroPasoRepository _pasos;
     private readonly IUnitOfWork _uow;
     private readonly IAcidTestRunner _acidTests;
+    private readonly ICompendioService? _compendio;
 
     public GeneracionService(
         ILlmClientFactory llmFactory,
@@ -58,7 +59,8 @@ public sealed class GeneracionService : IGeneracionService
         IObraRepository obras,
         IRegistroPasoRepository pasos,
         IUnitOfWork uow,
-        IAcidTestRunner acidTests)
+        IAcidTestRunner acidTests,
+        ICompendioService? compendio = null)
     {
         _llmFactory = llmFactory;
         _opts = opts;
@@ -68,6 +70,7 @@ public sealed class GeneracionService : IGeneracionService
         _pasos = pasos;
         _uow = uow;
         _acidTests = acidTests;
+        _compendio = compendio;
     }
 
     public async Task<CapituloVersion> GenerarBorradorAsync(
@@ -197,7 +200,18 @@ public sealed class GeneracionService : IGeneracionService
         // Sin al menos un personaje y una ubicación no hay nada que localizar.
         if (presentes.Count == 0 || ubicacion is null) return null;
 
-        return new AcidContext(capitulo, version.Texto, presentes, ubicacion, eventosPrevios);
+        var ctx = new AcidContext(capitulo, version.Texto, presentes, ubicacion, eventosPrevios);
+
+        // Compendio (pasado + futuro). Opcional: si el servicio no está registrado
+        // (tests viejos), el AcidContext queda con los strings vacíos y el prompt
+        // del validador omite las secciones — comportamiento legacy preservado.
+        if (_compendio is not null)
+        {
+            var comp = await _compendio.ObtenerAsync(obraId, capitulo.Orden, ct);
+            ctx = ctx with { Pasado = comp.Pasado, Futuro = comp.Futuro };
+        }
+
+        return ctx;
     }
 
     // Vuelca los resultados por dimensión sobre la PruebaAcido holística:

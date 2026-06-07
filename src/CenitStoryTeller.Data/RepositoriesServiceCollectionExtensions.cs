@@ -20,6 +20,7 @@ public static class RepositoriesServiceCollectionExtensions
         services.AddSingleton<IPromptProvider, FilePromptProvider>();
         services.AddScoped<IGeneracionService, GeneracionService>();
         services.AddScoped<IModernizacionService, ModernizacionService>();
+        services.AddScoped<ICompendioService, CompendioService>();
         return services;
     }
 }

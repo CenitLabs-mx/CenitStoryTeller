@@ -19,6 +19,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddMudServices();
 
+builder.Services.AddMemoryCache();
 builder.Services.AddNovelaLlm(builder.Configuration);
 builder.Services.AddNovelaAcidTests();
 builder.Services.AddNovelaData(builder.Configuration);

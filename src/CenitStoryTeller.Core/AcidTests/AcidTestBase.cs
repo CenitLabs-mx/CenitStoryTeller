@@ -62,6 +62,18 @@ public abstract class AcidTestBase : IAcidTest
         sb.AppendLine("## Contexto del canon");
         sb.AppendLine(ContextoRelevante(ctx));
         sb.AppendLine();
+        if (!string.IsNullOrWhiteSpace(ctx.Pasado))
+        {
+            sb.AppendLine("## Resumen de capítulos previos aprobados");
+            sb.AppendLine(ctx.Pasado);
+            sb.AppendLine();
+        }
+        if (!string.IsNullOrWhiteSpace(ctx.Futuro))
+        {
+            sb.AppendLine("## Beats futuros pendientes (no se pueden cerrar prematuramente)");
+            sb.AppendLine(ctx.Futuro);
+            sb.AppendLine();
+        }
         sb.AppendLine("## Prosa propuesta a evaluar");
         sb.AppendLine(ctx.ProsaPropuesta);
         return sb.ToString();
