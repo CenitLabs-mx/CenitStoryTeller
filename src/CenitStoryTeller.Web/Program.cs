@@ -1,5 +1,6 @@
 using CenitStoryTeller.Web;
 using CenitStoryTeller.Web.Components;
+using CenitStoryTeller.Web.Email;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Core.AcidTests;
 using CenitStoryTeller.Data;
@@ -44,6 +45,15 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.LogoutPath = "/logout";
     o.AccessDeniedPath = "/login";
 });
+
+// Email: SendGrid si hay API key configurada, console (a logs) si no.
+builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection(SendGridOptions.SectionName));
+var sendGridKey = builder.Configuration["SendGrid:ApiKey"];
+if (!string.IsNullOrWhiteSpace(sendGridKey))
+    builder.Services.AddSingleton<IAppEmailSender, SendGridEmailSender>();
+else
+    builder.Services.AddSingleton<IAppEmailSender, ConsoleEmailSender>();
+builder.Services.AddTransient<Microsoft.AspNetCore.Identity.IEmailSender<Usuario>, IdentityEmailSender>();
 
 var app = builder.Build();
 
