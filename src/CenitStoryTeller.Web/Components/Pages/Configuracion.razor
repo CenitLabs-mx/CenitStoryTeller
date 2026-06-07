@@ -1,0 +1,144 @@
+@page "/configuracion"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using CenitStoryTeller.Core.Llm
+@using CenitStoryTeller.Data
+@using CenitStoryTeller.Data.Entities
+@using CenitStoryTeller.Data.Repositories
+@inject ICurrentUser CurrentUser
+@inject IConfiguracionLlmRepository ConfigRepo
+@inject IUnitOfWork Uow
+@inject ILlmClientFactory LlmFactory
+@inject ILlmOptionsAccessor LlmOpts
+@inject ISnackbar Snackbar
+
+<PageTitle>Configuración LLM · CenitStoryTeller</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="my-6">
+    <MudText Typo="Typo.h4" Class="mb-2">Configuración LLM</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+        Configura qué proveedor de IA usar y con qué credenciales. La configuración es
+        privada para tu cuenta — otros usuarios usan la suya o el fallback global.
+    </MudText>
+
+    <MudCard Elevation="2">
+        <MudCardContent>
+            <MudSelect T="string" @bind-Value="_form.Provider" Label="Proveedor" Class="mb-4" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("openai")">OpenAI</MudSelectItem>
+                <MudSelectItem Value="@("gemini")">Google Gemini</MudSelectItem>
+                <MudSelectItem Value="@("ollama")">Ollama (local)</MudSelectItem>
+            </MudSelect>
+
+            <MudTextField @bind-Value="_form.ApiKey" Label="API Key" InputType="InputType.Password"
+                          Class="mb-4" Variant="Variant.Outlined"
+                          HelperText="Para Ollama puedes dejarlo vacío." />
+
+            <MudTextField @bind-Value="_form.BaseUrl" Label="Base URL (opcional)"
+                          Class="mb-4" Variant="Variant.Outlined"
+                          HelperText="Para Ollama o proxies. Vacío = endpoint por defecto del proveedor." />
+
+            <MudTextField @bind-Value="_form.ModelDraft" Label="Modelo para borradores"
+                          Class="mb-4" Variant="Variant.Outlined"
+                          HelperText="Modelo barato/rápido. Ej: gpt-4o-mini, gemini-1.5-flash, llama3.1" />
+
+            <MudTextField @bind-Value="_form.ModelReview" Label="Modelo para prueba del ácido"
+                          Class="mb-4" Variant="Variant.Outlined"
+                          HelperText="Modelo fuerte/preciso. Ej: gpt-4o, gemini-1.5-pro" />
+        </MudCardContent>
+        <MudCardActions Class="px-4 pb-4" Style="gap: 0.5rem;">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GuardarAsync" Disabled="_trabajando">
+                @(_trabajando ? "Guardando..." : "Guardar")
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="ProbarConexionAsync" Disabled="_trabajando">
+                Probar conexión
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private FormModel _form = new();
+    private bool _trabajando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Id is not { } uid) return;
+
+        var existente = await ConfigRepo.ObtenerPorUsuarioAsync(uid);
+        if (existente is not null)
+        {
+            _form.Provider = existente.Provider;
+            _form.ApiKey = existente.ApiKey;
+            _form.BaseUrl = existente.BaseUrl ?? "";
+            _form.ModelDraft = existente.ModelDraft;
+            _form.ModelReview = existente.ModelReview;
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (CurrentUser.Id is not { } uid)
+        {
+            Snackbar.Add("No hay sesión activa.", Severity.Error);
+            return;
+        }
+
+        _trabajando = true;
+        try
+        {
+            await ConfigRepo.GuardarAsync(new ConfiguracionLlm
+            {
+                UsuarioId = uid,
+                Provider = _form.Provider,
+                ApiKey = _form.ApiKey,
+                BaseUrl = string.IsNullOrWhiteSpace(_form.BaseUrl) ? null : _form.BaseUrl.Trim(),
+                ModelDraft = _form.ModelDraft,
+                ModelReview = _form.ModelReview
+            });
+            await Uow.SaveChangesAsync();
+            Snackbar.Add("Configuración guardada.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error guardando: {ex.Message}", Severity.Error);
+        }
+        finally { _trabajando = false; }
+    }
+
+    private async Task ProbarConexionAsync()
+    {
+        _trabajando = true;
+        try
+        {
+            // Resolver opciones actuales (las guardadas, no las del form sin guardar).
+            var opts = await LlmOpts.ObtenerAsync();
+            var llm = await LlmFactory.ObtenerAsync();
+            var resp = await llm.CompleteAsync(new LlmRequest
+            {
+                Model = opts.ModelDraft,
+                Temperature = 0.0,
+                Messages = new[]
+                {
+                    LlmMessage.System("Responde con la palabra OK y nada más."),
+                    LlmMessage.User("ping")
+                },
+                MaxTokens = 8
+            });
+            Snackbar.Add($"Conexión OK con {resp.Model}.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Falló: {ex.Message}", Severity.Error);
+        }
+        finally { _trabajando = false; }
+    }
+
+    private sealed class FormModel
+    {
+        public string Provider { get; set; } = "openai";
+        public string ApiKey { get; set; } = "";
+        public string BaseUrl { get; set; } = "";
+        public string ModelDraft { get; set; } = "gpt-4o-mini";
+        public string ModelReview { get; set; } = "gpt-4o";
+    }
+}
