@@ -25,17 +25,20 @@ public interface ICompendioService
 public sealed class CompendioService : ICompendioService
 {
     private readonly IObraRepository _obras;
+    private readonly ICapituloRepository _capitulos;
     private readonly ILlmClientFactory _llmFactory;
     private readonly ILlmOptionsAccessor _opts;
     private readonly IMemoryCache _cache;
 
     public CompendioService(
         IObraRepository obras,
+        ICapituloRepository capitulos,
         ILlmClientFactory llmFactory,
         ILlmOptionsAccessor opts,
         IMemoryCache cache)
     {
         _obras = obras;
+        _capitulos = capitulos;
         _llmFactory = llmFactory;
         _opts = opts;
         _cache = cache;
@@ -59,19 +62,14 @@ public sealed class CompendioService : ICompendioService
                 (string.IsNullOrWhiteSpace(b.Descripcion) ? "" : $" — {b.Descripcion}")));
 
         // ---- Pasado: capítulos previos con su versión final aprobada. ----
-        var capitulosPrevios = obra.Capitulos
-            .Where(c => c.Orden < hastaOrden)
-            .OrderBy(c => c.Orden)
+        // Cargamos finales en una query separada porque GetConCanonAsync no incluye
+        // Versiones (sería caro para los flujos que solo necesitan el canon).
+        var finalesObra = await _capitulos.ListVersionesFinalesPorObraAsync(obraId, ct);
+        var versionesFinales = finalesObra
+            .Where(v => v.Capitulo!.Orden < hastaOrden)
+            .OrderBy(v => v.Capitulo!.Orden)
+            .Select(v => (Cap: v.Capitulo!, V: v))
             .ToList();
-
-        // Solo versiones marcadas como finales: representan lo "canon" hasta ahora.
-        // Si un capítulo previo aún no tiene final, lo omitimos (no es canon).
-        var versionesFinales = new List<(Capitulo Cap, CapituloVersion V)>();
-        foreach (var c in capitulosPrevios)
-        {
-            var final = c.Versiones.FirstOrDefault(v => v.EsFinal);
-            if (final is not null) versionesFinales.Add((c, final));
-        }
 
         if (versionesFinales.Count == 0)
             return new Compendio("(no hay capítulos previos aprobados)", futuro);

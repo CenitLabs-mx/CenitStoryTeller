@@ -14,6 +14,9 @@ public interface ICapituloRepository
     Task<Capitulo?> GetConVersionesAsync(Guid id, CancellationToken ct = default);
     Task<CapituloVersion?> GetVersionAsync(Guid versionId, CancellationToken ct = default);
     Task<IReadOnlyList<Capitulo>> ListPorObraAsync(Guid obraId, CancellationToken ct = default);
+    // Versiones marcadas como finales (canon) para todos los capítulos de una obra.
+    // Útil para construir el compendio del pasado sin sobrecargar GetConCanonAsync.
+    Task<IReadOnlyList<CapituloVersion>> ListVersionesFinalesPorObraAsync(Guid obraId, CancellationToken ct = default);
     Task<int> SiguienteNumeroVersionAsync(Guid capituloId, CancellationToken ct = default);
     Task AgregarVersionAsync(CapituloVersion version, CancellationToken ct = default);
     Task GuardarPruebaAcidoAsync(PruebaAcido prueba, CancellationToken ct = default);
@@ -41,6 +44,14 @@ public sealed class CapituloRepository : ICapituloRepository
 
     public async Task<IReadOnlyList<Capitulo>> ListPorObraAsync(Guid obraId, CancellationToken ct = default) =>
         await _db.Capitulos.Where(c => c.ObraId == obraId).OrderBy(c => c.Orden).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<CapituloVersion>> ListVersionesFinalesPorObraAsync(
+        Guid obraId, CancellationToken ct = default) =>
+        await _db.CapituloVersiones
+            .Include(v => v.Capitulo)
+            .Where(v => v.EsFinal && v.Capitulo!.ObraId == obraId)
+            .OrderBy(v => v.Capitulo!.Orden)
+            .ToListAsync(ct);
 
     public async Task<int> SiguienteNumeroVersionAsync(Guid capituloId, CancellationToken ct = default)
     {
