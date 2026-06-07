@@ -2,23 +2,19 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 @inject ICapituloRepository Capitulos
+@inject IObraRepository Obras
 @inject IGeneracionService Generacion
 
 <PageTitle>Versiones del capítulo</PageTitle>
 
 @if (_capitulo is null)
 {
-    <p><em>Cargando…</em></p>
+    <MudProgressCircular Indeterminate="true" />
 }
 else
 {
-    <div class="mb-3">
-        <a href="" class="btn btn-sm btn-outline-secondary">
-            <span class="bi bi-arrow-left"></span> Volver al Taller
-        </a>
-    </div>
-
-    <h1 class="display-6 fw-bold mb-3">@_capitulo.Titulo</h1>
+    <MudBreadcrumbs Items="@_crumbs" Class="px-0 mb-2" />
+    <MudText Typo="Typo.h4" Class="mb-3">@_capitulo.Titulo</MudText>
 
     <!-- Panel para redactar/generar un borrador de este capítulo -->
     <div class="card mb-4 p-3 bg-white border shadow-sm">
@@ -86,6 +82,7 @@ else
     private Capitulo? _capitulo;
     private List<CapituloVersion> _versiones = new();
     private Guid _izqId, _derId;
+    private List<BreadcrumbItem> _crumbs = new();
 
     private string _promptUsuario = "";
     private bool _generando = false;
@@ -111,6 +108,16 @@ else
     {
         _capitulo = await Capitulos.GetConVersionesAsync(CapituloId);
         _versiones = _capitulo?.Versiones.OrderBy(v => v.NumeroVersion).ToList() ?? new();
+        if (_capitulo is not null)
+        {
+            var obra = await Obras.GetAsync(_capitulo.ObraId);
+            _crumbs = new()
+            {
+                new BreadcrumbItem("Inicio", "/"),
+                new BreadcrumbItem(obra?.Titulo ?? "Obra", $"/obras/{_capitulo.ObraId}"),
+                new BreadcrumbItem(_capitulo.Titulo, null, disabled: true)
+            };
+        }
     }
 
     private async Task GenerarNuevoBorrador()

@@ -18,64 +18,37 @@
 }
 else
 {
-    <div class="container my-5" style="max-width: 1000px;">
-        <!-- Cabecera de Navegación -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <MudBreadcrumbs Items="@_crumbs" Class="px-0 mb-2" />
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
             <div>
-                <a href="" class="btn btn-sm btn-outline-secondary mb-2">
-                    <span class="bi bi-arrow-left"></span> Volver al Taller
-                </a>
-                <h1 class="display-6 fw-bold mb-0">@_obra.Titulo</h1>
-                <p class="text-muted mb-0 small">
-                    <strong>Medio:</strong> @(_obra.Medio ?? "—") · 
-                    <strong>Género:</strong> @(_obra.Genero ?? "—") · 
+                <MudText Typo="Typo.h4">@_obra.Titulo</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    <strong>Medio:</strong> @(_obra.Medio ?? "—") ·
+                    <strong>Género:</strong> @(_obra.Genero ?? "—") ·
                     <strong>Intake:</strong> @_obra.Intake
-                </p>
+                </MudText>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-secondary p-2">Estado: @_obra.Estado</span>
-                <a class="btn btn-outline-secondary" href="/obras/@(_obra.Id)/pasos">
-                    <span class="bi bi-clock-history"></span> Bitácora de Pasos
-                </a>
-            </div>
-        </div>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudChip T="string" Variant="Variant.Outlined">Estado: @_obra.Estado</MudChip>
+                <MudButton Href="@($"/obras/{_obra.Id}/pasos")" Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Outlined.History">
+                    Bitácora
+                </MudButton>
+            </MudStack>
+        </MudStack>
 
         @if (!string.IsNullOrWhiteSpace(_obra.Logline))
         {
-            <blockquote class="text-muted italic small border-start border-3 ps-3 mb-4 bg-light p-2 rounded-end">
-                "@_obra.Logline"
-            </blockquote>
+            <MudPaper Elevation="0" Class="pa-3 my-3" Style="border-left: 4px solid var(--mud-palette-primary); background: var(--mud-palette-background-grey);">
+                <MudText Typo="Typo.body2"><em>"@_obra.Logline"</em></MudText>
+            </MudPaper>
         }
 
-        <!-- Pestañas del centro operativo -->
-        <ul class="nav nav-tabs nav-fill mb-3" id="tab-detalle" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link @(_activeTab == "caps" ? "active fw-bold" : "")" @onclick='() => _activeTab = "caps"'>
-                    <span class="bi bi-list-ol"></span> Capítulos (@_capitulos.Count)
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link @(_activeTab == "chars" ? "active fw-bold" : "")" @onclick='() => _activeTab = "chars"'>
-                    <span class="bi bi-people-fill"></span> Personajes (@_obra.Personajes.Count)
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link @(_activeTab == "locs" ? "active fw-bold" : "")" @onclick='() => _activeTab = "locs"'>
-                    <span class="bi bi-geo-alt-fill"></span> Ubicaciones (@_obra.Ubicaciones.Count)
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link @(_activeTab == "beats" ? "active fw-bold" : "")" @onclick='() => _activeTab = "beats"'>
-                    <span class="bi bi-graph-up"></span> Estructura (Beats) (@_obra.Beats.Count)
-                </button>
-            </li>
-        </ul>
-
-        <!-- Contenido de las pestañas -->
-        <div class="tab-content border p-4 rounded bg-white shadow-2xs" style="min-height: 250px;">
-            @if (_activeTab == "caps")
-            {
-                <!-- PESTAÑA CAPÍTULOS -->
+        <MudTabs Outlined="true" Rounded="true" PanelClass="pa-4" Class="mt-4">
+            <MudTabPanel Text="@($"Capítulos ({_capitulos.Count})")" Icon="@Icons.Material.Outlined.MenuBook">
+                <div class="tab-content" style="min-height: 200px;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="h5 fw-bold mb-0">Listado de Capítulos</h3>
                 </div>
@@ -99,10 +72,11 @@ else
                         }
                     </div>
                 }
-            }
-            else if (_activeTab == "chars")
-            {
-                <!-- PESTAÑA PERSONAJES -->
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Personajes ({_obra.Personajes.Count})")" Icon="@Icons.Material.Outlined.People">
+                <div class="tab-content" style="min-height: 200px;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="h5 fw-bold mb-0">Fichas de Personajes</h3>
                     <button class="btn btn-sm btn-primary" @onclick="IniciarNuevoPersonaje">
@@ -148,9 +122,11 @@ else
                     </div>
                 }
             }
-            else if (_activeTab == "locs")
-            {
-                <!-- PESTAÑA UBICACIONES -->
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Ubicaciones ({_obra.Ubicaciones.Count})")" Icon="@Icons.Material.Outlined.Place">
+                <div class="tab-content" style="min-height: 200px;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="h5 fw-bold mb-0">Fichas de Ubicaciones</h3>
                     <button class="btn btn-sm btn-primary" @onclick="IniciarNuevaUbicacion">
@@ -191,9 +167,11 @@ else
                     </div>
                 }
             }
-            else if (_activeTab == "beats")
-            {
-                <!-- PESTAÑA BEATS -->
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Beats ({_obra.Beats.Count})")" Icon="@Icons.Material.Outlined.Timeline">
+                <div class="tab-content" style="min-height: 200px;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="h5 fw-bold mb-0">Estructura de la Novela (Beats)</h3>
                     <button class="btn btn-sm btn-primary" @onclick="IniciarNuevoBeat">
@@ -238,8 +216,9 @@ else
                         </table>
                     </div>
                 }
-            }
-        </div>
+                </div>
+            </MudTabPanel>
+        </MudTabs>
     </div>
 
     <!-- MODAL EDITAR / AÑADIR PERSONAJE -->
@@ -397,7 +376,7 @@ else
     [Parameter] public Guid ObraId { get; set; }
     private Obra? _obra;
     private List<Capitulo> _capitulos = new();
-    private string _activeTab = "caps";
+    private List<BreadcrumbItem> _crumbs = new();
 
     // Estados de edición
     private Personaje? _editingPersonaje;
@@ -416,6 +395,11 @@ else
         _capitulos = (_obra?.Capitulos ?? new List<Capitulo>())
             .OrderBy(c => c.Orden)
             .ToList();
+        _crumbs = new()
+        {
+            new BreadcrumbItem("Inicio", "/"),
+            new BreadcrumbItem(_obra?.Titulo ?? "Obra", null, disabled: true)
+        };
     }
 
     // ----- PERSONAJES -----
