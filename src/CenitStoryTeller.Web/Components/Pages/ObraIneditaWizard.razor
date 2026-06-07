@@ -2,14 +2,13 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.Extensions.Options
 @using System.Text.Json
 @using CenitStoryTeller.Core.Llm
 @using CenitStoryTeller.Data
 @using CenitStoryTeller.Core.Entities
 @inject NovelaDbContext Db
-@inject ILlmClient Llm
-@inject IOptions<LlmOptions> LlmOpt
+@inject ILlmClientFactory LlmFactory
+@inject ILlmOptionsAccessor LlmOpts
 @inject NavigationManager Nav
 
 <PageTitle>Crear Obra Inédita - Novela Engine</PageTitle>
@@ -436,9 +435,11 @@ El JSON debe coincidir con este esquema exacto:
 
 Genera por lo menos 3 personajes, 2 ubicaciones y una estructura de entre 5 y 9 beats ordenados secuencialmente.";
 
-            var resp = await Llm.CompleteAsync(new LlmRequest
+            var llm = await LlmFactory.ObtenerAsync();
+            var opts = await LlmOpts.ObtenerAsync();
+            var resp = await llm.CompleteAsync(new LlmRequest
             {
-                Model = LlmOpt.Value.ModelReview,
+                Model = opts.ModelReview,
                 Temperature = 0.7,
                 Messages = new[]
                 {

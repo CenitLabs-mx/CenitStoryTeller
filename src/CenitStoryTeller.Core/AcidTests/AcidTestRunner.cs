@@ -15,22 +15,23 @@ public interface IAcidTestRunner
 public sealed class AcidTestRunner : IAcidTestRunner
 {
     private readonly IEnumerable<IAcidTest> _tests;
-    private readonly ILlmClient _llm;
+    private readonly ILlmClientFactory _llmFactory;
 
-    public AcidTestRunner(IEnumerable<IAcidTest> tests, ILlmClient llm)
+    public AcidTestRunner(IEnumerable<IAcidTest> tests, ILlmClientFactory llmFactory)
     {
         _tests = tests;
-        _llm = llm;
+        _llmFactory = llmFactory;
     }
 
     // Secuencial a propósito: evita rate limits y mantiene el orden de las dimensiones.
     public async Task<IReadOnlyList<DimensionResultado>> EjecutarAsync(
         AcidContext ctx, CancellationToken ct = default)
     {
+        var llm = await _llmFactory.ObtenerAsync(ct);
         var resultados = new List<DimensionResultado>();
         foreach (var test in _tests)
         {
-            var r = await test.EvaluarAsync(ctx, _llm, ct);
+            var r = await test.EvaluarAsync(ctx, llm, ct);
             resultados.Add(new DimensionResultado(test.Dimension, r));
         }
         return resultados;

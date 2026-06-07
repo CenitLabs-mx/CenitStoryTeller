@@ -52,7 +52,7 @@ public class AcidTestRunnerTests
             new FakeTest(AcidDimension.Ambiental, true),
             new FakeTest(AcidDimension.Psicologica, true)
         };
-        var runner = new AcidTestRunner(tests, new FakeLlmClient());
+        var runner = new AcidTestRunner(tests, new FakeLlmClientFactory(new FakeLlmClient()));
 
         var r = await runner.EjecutarAsync(Ctx());
 
@@ -66,7 +66,7 @@ public class AcidTestRunnerTests
     {
         var fisica = new FakeTest(AcidDimension.Fisica, pasa: false);
         var ambiental = new FakeTest(AcidDimension.Ambiental, pasa: true);
-        var runner = new AcidTestRunner(new IAcidTest[] { fisica, ambiental }, new FakeLlmClient());
+        var runner = new AcidTestRunner(new IAcidTest[] { fisica, ambiental }, new FakeLlmClientFactory(new FakeLlmClient()));
 
         var r = await runner.EjecutarAsync(Ctx());
 
@@ -79,7 +79,7 @@ public class AcidTestRunnerTests
     {
         var t1 = new FakeTest(AcidDimension.Fisica, true);
         var t2 = new FakeTest(AcidDimension.Psicologica, true);
-        var runner = new AcidTestRunner(new IAcidTest[] { t1, t2 }, new FakeLlmClient());
+        var runner = new AcidTestRunner(new IAcidTest[] { t1, t2 }, new FakeLlmClientFactory(new FakeLlmClient()));
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -94,7 +94,7 @@ public class AcidTestRunnerTests
     [Fact]
     public async Task Ejecutar_SinTests_DevuelveVacio()
     {
-        var runner = new AcidTestRunner(Array.Empty<IAcidTest>(), new FakeLlmClient());
+        var runner = new AcidTestRunner(Array.Empty<IAcidTest>(), new FakeLlmClientFactory(new FakeLlmClient()));
         var r = await runner.EjecutarAsync(Ctx());
         Assert.Empty(r);
     }

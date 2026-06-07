@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 using CenitStoryTeller.Core.Entities;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Data.Services;
@@ -36,9 +35,13 @@ public class ModernizacionServiceTests : IDisposable
     {
         var suite = _test.NuevaSuite();
         var llm = new FakeLlmClient();
+        var factory = new FakeLlmClientFactory(llm);
+        var opts = new FakeLlmOptionsAccessor
+        {
+            Options = new LlmOptions { ModelDraft = "d", ModelReview = "r" }
+        };
         var svc = new ModernizacionService(
-            llm,
-            Options.Create(new LlmOptions { ModelDraft = "d", ModelReview = "r" }),
+            factory, opts,
             new FakePromptProvider(),
             suite.Obras, suite.Pasos, suite.Uow);
         return (svc, llm, suite);

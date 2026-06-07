@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Core.AcidTests;
 using CenitStoryTeller.Core.Entities;
@@ -23,33 +22,33 @@ public interface IGeneracionService
 
 public sealed class GeneracionService : IGeneracionService
 {
-    private readonly ILlmClient _llm;
-    private readonly LlmOptions _opt;
+    private readonly ILlmClientFactory _llmFactory;
+    private readonly ILlmOptionsAccessor _opts;
     private readonly IPromptProvider _prompts;
     private readonly ICapituloRepository _capitulos;
     private readonly IObraRepository _obras;
     private readonly IRegistroPasoRepository _pasos;
     private readonly IUnitOfWork _uow;
-    private readonly IAcidTestRunner _acidTests;   // NUEVO
+    private readonly IAcidTestRunner _acidTests;
 
     public GeneracionService(
-        ILlmClient llm,
-        IOptions<LlmOptions> opt,
+        ILlmClientFactory llmFactory,
+        ILlmOptionsAccessor opts,
         IPromptProvider prompts,
         ICapituloRepository capitulos,
         IObraRepository obras,
         IRegistroPasoRepository pasos,
         IUnitOfWork uow,
-        IAcidTestRunner acidTests)   // NUEVO
+        IAcidTestRunner acidTests)
     {
-        _llm = llm;
-        _opt = opt.Value;
+        _llmFactory = llmFactory;
+        _opts = opts;
         _prompts = prompts;
         _capitulos = capitulos;
         _obras = obras;
         _pasos = pasos;
         _uow = uow;
-        _acidTests = acidTests;   // NUEVO
+        _acidTests = acidTests;
     }
 
     public async Task<CapituloVersion> GenerarBorradorAsync(
@@ -59,9 +58,11 @@ public sealed class GeneracionService : IGeneracionService
             ?? throw new InvalidOperationException($"No existe el capítulo {capituloId}.");
 
         var system = await _prompts.MotorDeHistoriaAsync(ct);
-        var resp = await _llm.CompleteAsync(new LlmRequest
+        var opt = await _opts.ObtenerAsync(ct);
+        var llm = await _llmFactory.ObtenerAsync(ct);
+        var resp = await llm.CompleteAsync(new LlmRequest
         {
-            Model = _opt.ModelDraft,          // borrador con modelo barato
+            Model = opt.ModelDraft,          // borrador con modelo barato
             Temperature = 0.9,
             Messages = new[]
             {
@@ -106,9 +107,11 @@ public sealed class GeneracionService : IGeneracionService
 
         // 1) Chequeo holístico: un solo prompt con el modelo fuerte da el veredicto global.
         var system = await _prompts.ContinuidadAcidoAsync(ct);
-        var resp = await _llm.CompleteAsync(new LlmRequest
+        var opt = await _opts.ObtenerAsync(ct);
+        var llm = await _llmFactory.ObtenerAsync(ct);
+        var resp = await llm.CompleteAsync(new LlmRequest
         {
-            Model = _opt.ModelReview,
+            Model = opt.ModelReview,
             Temperature = 0.2,
             Messages = new[]
             {

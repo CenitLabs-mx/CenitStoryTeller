@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 using CenitStoryTeller.Core.AcidTests;
 using CenitStoryTeller.Core.Entities;
 using CenitStoryTeller.Core.Llm;
@@ -35,8 +34,12 @@ public class GeneracionServiceTests : IDisposable
     {
         var suite = _test.NuevaSuite();
         var llm = new FakeLlmClient();
-        var opts = Options.Create(new LlmOptions { ModelDraft = "draft-m", ModelReview = "review-m" });
-        var svc = new GeneracionService(llm, opts, new FakePromptProvider(),
+        var factory = new FakeLlmClientFactory(llm);
+        var opts = new FakeLlmOptionsAccessor
+        {
+            Options = new LlmOptions { ModelDraft = "draft-m", ModelReview = "review-m" }
+        };
+        var svc = new GeneracionService(factory, opts, new FakePromptProvider(),
             suite.Capitulos, suite.Obras, suite.Pasos, suite.Uow,
             runner ?? new NoopAcidRunner());
         return (svc, llm, suite);

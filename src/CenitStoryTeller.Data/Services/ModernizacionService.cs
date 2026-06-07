@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 using CenitStoryTeller.Core.Entities;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Data.Repositories;
@@ -17,23 +16,23 @@ public interface IModernizacionService
 
 public sealed class ModernizacionService : IModernizacionService
 {
-    private readonly ILlmClient _llm;
-    private readonly LlmOptions _opt;
+    private readonly ILlmClientFactory _llmFactory;
+    private readonly ILlmOptionsAccessor _opts;
     private readonly IPromptProvider _prompts;
     private readonly IObraRepository _obras;
     private readonly IRegistroPasoRepository _pasos;
     private readonly IUnitOfWork _uow;
 
     public ModernizacionService(
-        ILlmClient llm,
-        IOptions<LlmOptions> opt,
+        ILlmClientFactory llmFactory,
+        ILlmOptionsAccessor opts,
         IPromptProvider prompts,
         IObraRepository obras,
         IRegistroPasoRepository pasos,
         IUnitOfWork uow)
     {
-        _llm = llm;
-        _opt = opt.Value;
+        _llmFactory = llmFactory;
+        _opts = opts;
         _prompts = prompts;
         _obras = obras;
         _pasos = pasos;
@@ -54,9 +53,11 @@ public sealed class ModernizacionService : IModernizacionService
         var system = await _prompts.ModernizaAsync(ct);
         var instruccion = ModernizaParser.InstruccionJson(p, CanonSerializer.ToTexto(obra));
 
-        var resp = await _llm.CompleteAsync(new LlmRequest
+        var opt = await _opts.ObtenerAsync(ct);
+        var llm = await _llmFactory.ObtenerAsync(ct);
+        var resp = await llm.CompleteAsync(new LlmRequest
         {
-            Model = _opt.ModelReview,
+            Model = opt.ModelReview,
             Temperature = 0.4,
             Messages = new[] { LlmMessage.System(system), LlmMessage.User(instruccion) }
         }, ct);
