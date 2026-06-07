@@ -9,9 +9,31 @@
 @inject NovelaDbContext Db
 @inject ILlmClientFactory LlmFactory
 @inject ILlmOptionsAccessor LlmOpts
+@inject IGeneracionService Generacion
 @inject NavigationManager Nav
 
 <PageTitle>Crear Obra Inédita - Novela Engine</PageTitle>
+
+@if (_autoBorrando)
+{
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center"
+         style="background: rgba(0,0,0,0.55); z-index: 1050; color: white;">
+        <div class="spinner-border text-light mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+        <h3 class="h5 fw-bold">Generando borradores iniciales con IA...</h3>
+        @if (_borradorTotal > 0)
+        {
+            <div class="progress mt-3" style="width: 400px; height: 8px;">
+                <div class="progress-bar bg-success" role="progressbar"
+                     style="width: @(_borradorHecho * 100 / _borradorTotal)%"></div>
+            </div>
+            <p class="small mt-2">@_borradorHecho / @_borradorTotal · @_borradorActual</p>
+        }
+        else
+        {
+            <p class="small text-light-emphasis mt-2">Preparando...</p>
+        }
+    </div>
+}
 
 <div class="container my-5" style="max-width: 900px;">
     <div class="mb-4">
@@ -314,6 +336,11 @@
     private string _errorMessage = "";
     private WizardResultDto? _wizardResult;
 
+    // Estado del autoborrador post-creación.
+    private bool _autoBorrando = false;
+    private int _borradorHecho, _borradorTotal;
+    private string _borradorActual = "";
+
     // Modelos manuales
     private Obra _manualObra = new() { Estado = ObraEstado.Biblia, Intake = IntakeTipo.Idea };
     private List<Personaje> _manualPersonajes = new();
@@ -564,7 +591,7 @@ Genera por lo menos 3 personajes, 2 ubicaciones y una estructura de entre 5 y 9 
             });
 
             await Db.SaveChangesAsync();
-            Nav.NavigateTo("");
+            await AutoBorrarYNavegarAsync(obra.Id);
         }
         catch (Exception ex)
         {
@@ -641,12 +668,34 @@ Genera por lo menos 3 personajes, 2 ubicaciones y una estructura de entre 5 y 9 
             });
 
             await Db.SaveChangesAsync();
-            Nav.NavigateTo("");
+            await AutoBorrarYNavegarAsync(obra.Id);
         }
         catch (Exception ex)
         {
             _errorMessage = $"Error al guardar la obra: {ex.Message}";
         }
+    }
+
+    // Tras guardar la obra: dispara la generación de v1 de cada capítulo recién creado,
+    // mostrando progreso por capítulo. Al terminar, navega al workspace de la obra.
+    private async Task AutoBorrarYNavegarAsync(Guid obraId)
+    {
+        _autoBorrando = true;
+        _borradorActual = "";
+        _borradorHecho = _borradorTotal = 0;
+        StateHasChanged();
+
+        var progress = new Progress<BorradorProgreso>(p =>
+        {
+            _borradorHecho = p.Hecho;
+            _borradorTotal = p.Total;
+            _borradorActual = p.CapituloActual;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await Generacion.GenerarBorradoresPendientesAsync(obraId, progress);
+
+        Nav.NavigateTo($"/obras/{obraId}");
     }
 
     // DTOs para deserialización limpia del asistente IA

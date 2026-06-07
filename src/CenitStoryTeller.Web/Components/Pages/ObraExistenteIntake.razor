@@ -7,6 +7,7 @@
 @using CenitStoryTeller.Data.Services
 @inject NovelaDbContext Db
 @inject IModernizacionService Modernizacion
+@inject IGeneracionService Generacion
 @inject NavigationManager Nav
 
 <PageTitle>Modernizar Obra Clásica - Novela Engine</PageTitle>
@@ -29,8 +30,17 @@
         {
             <div class="text-center py-5">
                 <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
-                <h3 class="h5 fw-bold">Modernizando Canon con IA...</h3>
-                <p class="text-muted">Esto puede tardar unos momentos mientras la IA realiza la transposición dramática.</p>
+                <h3 class="h5 fw-bold">@_loadingTitle</h3>
+                <p class="text-muted">@_loadingMessage</p>
+                @if (_borradorTotal > 0)
+                {
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             style="width: @(_borradorHecho * 100 / _borradorTotal)%"
+                             aria-valuenow="@_borradorHecho" aria-valuemin="0" aria-valuemax="@_borradorTotal"></div>
+                    </div>
+                    <p class="small text-muted mt-2">@_borradorHecho / @_borradorTotal capítulos · @(_borradorActual)</p>
+                }
             </div>
         }
         else
@@ -94,6 +104,10 @@
 
 @code {
     private bool _loading = false;
+    private string _loadingTitle = "Modernizando Canon con IA...";
+    private string _loadingMessage = "Esto puede tardar unos momentos mientras la IA realiza la transposición dramática.";
+    private int _borradorHecho, _borradorTotal;
+    private string _borradorActual = "";
     private string _selectedSourceType = "template-eastlynne";
     private string _fidelidadString = "Libre";
     private string _errorMessage = "";
@@ -193,7 +207,21 @@
             // Guardar cambios finales de los capítulos
             await Db.SaveChangesAsync();
 
-            Nav.NavigateTo("");
+            // Auto-borrador: generar v1 de cada capítulo recién creado.
+            _loadingTitle = "Generando borradores iniciales...";
+            _loadingMessage = "La IA está redactando la primera versión de cada capítulo. Esto puede tardar varios minutos.";
+            StateHasChanged();
+
+            var progress = new Progress<BorradorProgreso>(p =>
+            {
+                _borradorHecho = p.Hecho;
+                _borradorTotal = p.Total;
+                _borradorActual = p.CapituloActual;
+                InvokeAsync(StateHasChanged);
+            });
+            await Generacion.GenerarBorradoresPendientesAsync(targetObraId, progress);
+
+            Nav.NavigateTo($"/obras/{targetObraId}");
         }
         catch (Exception ex)
         {
