@@ -155,16 +155,33 @@ isolation).
   `Core/Agents/ContinuidadAcido.cs` stubs (superseded by
   `GeneracionService` and `AcidTestRunner`).
 
+### Added — Pre-publish polish
+- ObraDetalle.razor split into focused per-tab components under
+  `Components/Pages/ObraTabs/`: ObraTabPersonajes, ObraTabUbicaciones,
+  ObraTabBeats, ObraTabCapitulos, ObraTabEventos. The parent page drops
+  from ~800 lines to ~110 — header + breadcrumbs + 6 thin
+  `<MudTabPanel><ObraTabX .../></MudTabPanel>`. Every Bootstrap modal
+  is now a MudDialog; every card uses MudCard / MudAvatar / MudImage.
+- Second public-domain demo: **El corazón delator** (Poe, 1843).
+  Three personajes, two ubicaciones, nine beats, six events, seven
+  capítulos. Different shape from East Lynne (short horror monologue
+  vs long serialized melodrama) — proves the framework isn't tuned
+  to one genre. Loaded automatically by `--migrate` alongside East
+  Lynne, idempotent.
+- `docs/architecture.md` — 9-section deep dive with Mermaid diagrams:
+  layout, end-to-end flow, the four-dimension acid test, the
+  compendio cache, LLM provider abstraction, multi-tenancy, data
+  model, and a prompts customization guide.
+- README "Preview" section with placeholder paths for screenshots
+  the operator can drop into `docs/images/`.
+
 ### Known limitations
 - API keys persisted in plain text in `ConfiguracionLlm.ApiKey`. Fine
   for single-tenant local installs; add at-rest encryption before
   running on shared infrastructure.
 - The legacy "Añadir Beat" button (append at end) still uses the
-  in-page CRUD path. "Insertar aquí" goes through `BeatService` and
-  handles renumbering — but if you alternate the two, behavior is
-  consistent only because the append path lands past the end.
-- Some CRUD modals (Personaje, Ubicación, Beat edit) are still
-  Bootstrap; the rest of the shell is MudBlazor. Visual cleanup is
-  scheduled for a follow-up.
+  in-component direct DbContext path. "Insertar aquí" goes through
+  `BeatService` and handles renumbering — both consistent because
+  the append path lands past the end.
 - No UI / integration tests yet — only service tests with a fake
   LLM and SQLite.
