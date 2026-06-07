@@ -1,0 +1,49 @@
+@page "/confirm-email"
+@layout AuthLayout
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using CenitStoryTeller.Data.Entities
+@inject UserManager<Usuario> UserMgr
+
+<PageTitle>Confirmar email · CenitStoryTeller</PageTitle>
+
+<MudCard Elevation="4" Class="pa-6" Style="max-width: 460px; margin: 4rem auto;">
+    @if (_estado is null)
+    {
+        <MudText>Verificando...</MudText>
+    }
+    else if (_estado == true)
+    {
+        <MudText Typo="Typo.h5" Class="mb-3">¡Email confirmado!</MudText>
+        <MudText>Ya puedes iniciar sesión.</MudText>
+        <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">
+            Ir a iniciar sesión
+        </MudButton>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Error">
+            No pudimos confirmar tu email. El enlace puede haber expirado o ya fue usado.
+        </MudAlert>
+        <MudButton Href="/login" Variant="Variant.Outlined" Class="mt-4">Volver al inicio</MudButton>
+    }
+</MudCard>
+
+@code {
+    [SupplyParameterFromQuery] private string? UserId { get; set; }
+    [SupplyParameterFromQuery] private string? Code { get; set; }
+    private bool? _estado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(UserId) || string.IsNullOrEmpty(Code)) { _estado = false; return; }
+
+        var user = await UserMgr.FindByIdAsync(UserId);
+        if (user is null) { _estado = false; return; }
+
+        var decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+        var result = await UserMgr.ConfirmEmailAsync(user, decoded);
+        _estado = result.Succeeded;
+    }
+}

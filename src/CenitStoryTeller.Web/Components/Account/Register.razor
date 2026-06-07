@@ -1,0 +1,98 @@
+@page "/register"
+@layout AuthLayout
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using CenitStoryTeller.Data.Entities
+@inject UserManager<Usuario> UserMgr
+@inject IEmailSender<Usuario> Emails
+@inject NavigationManager Nav
+
+<PageTitle>Crear cuenta · CenitStoryTeller</PageTitle>
+
+<MudCard Elevation="4" Class="pa-6" Style="max-width: 460px; margin: 4rem auto;">
+    <MudText Typo="Typo.h5" Class="mb-4">Crear cuenta</MudText>
+
+    @if (_errores.Count > 0)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">
+            @foreach (var err in _errores) { <div>@err</div> }
+        </MudAlert>
+    }
+
+    <EditForm Model="Input" method="post" OnValidSubmit="RegistrarAsync" FormName="register">
+        <DataAnnotationsValidator />
+
+        <MudTextField @bind-Value="Input.NombreDisplay" Label="Nombre para mostrar"
+                      Class="mb-3" Variant="Variant.Outlined" />
+
+        <MudTextField @bind-Value="Input.Email" Label="Email" InputType="InputType.Email"
+                      Required="true" Class="mb-3" Variant="Variant.Outlined" />
+        <ValidationMessage For="() => Input.Email" class="text-danger" />
+
+        <MudTextField @bind-Value="Input.Password" Label="Contraseña" InputType="InputType.Password"
+                      HelperText="Mínimo 8 caracteres, una mayúscula… espera, sin mayúscula. Mínimo 8, con un dígito."
+                      Required="true" Class="mb-3" Variant="Variant.Outlined" />
+        <ValidationMessage For="() => Input.Password" class="text-danger" />
+
+        <MudTextField @bind-Value="Input.PasswordConfirm" Label="Confirmar contraseña"
+                      InputType="InputType.Password" Required="true" Class="mb-3" Variant="Variant.Outlined" />
+        <ValidationMessage For="() => Input.PasswordConfirm" class="text-danger" />
+
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
+            Crear cuenta
+        </MudButton>
+    </EditForm>
+
+    <MudDivider Class="my-4" />
+    <MudLink Href="/login">¿Ya tienes cuenta? Inicia sesión</MudLink>
+</MudCard>
+
+@code {
+    [SupplyParameterFromForm] private InputModel Input { get; set; } = new();
+    private List<string> _errores = new();
+
+    private async Task RegistrarAsync()
+    {
+        _errores.Clear();
+
+        if (Input.Password != Input.PasswordConfirm)
+        {
+            _errores.Add("Las contraseñas no coinciden.");
+            return;
+        }
+
+        var usuario = new Usuario
+        {
+            UserName = Input.Email,
+            Email = Input.Email,
+            NombreDisplay = string.IsNullOrWhiteSpace(Input.NombreDisplay) ? null : Input.NombreDisplay.Trim()
+        };
+
+        var resultado = await UserMgr.CreateAsync(usuario, Input.Password);
+        if (!resultado.Succeeded)
+        {
+            _errores.AddRange(resultado.Errors.Select(e => e.Description));
+            return;
+        }
+
+        var userId = await UserMgr.GetUserIdAsync(usuario);
+        var code = await UserMgr.GenerateEmailConfirmationTokenAsync(usuario);
+        var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var confirmLink = Nav.ToAbsoluteUri($"/confirm-email?userId={userId}&code={encodedCode}").ToString();
+
+        await Emails.SendConfirmationLinkAsync(usuario, Input.Email, HtmlEncoder.Default.Encode(confirmLink));
+
+        Nav.NavigateTo($"/register-confirmation?email={Uri.EscapeDataString(Input.Email)}");
+    }
+
+    public sealed class InputModel
+    {
+        public string? NombreDisplay { get; set; }
+        [Required, EmailAddress] public string Email { get; set; } = "";
+        [Required, StringLength(100, MinimumLength = 8), DataType(DataType.Password)] public string Password { get; set; } = "";
+        [Required, DataType(DataType.Password)] public string PasswordConfirm { get; set; } = "";
+    }
+}

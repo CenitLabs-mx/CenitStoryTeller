@@ -1,6 +1,7 @@
 using CenitStoryTeller.Web;
 using CenitStoryTeller.Web.Components;
 using CenitStoryTeller.Web.Email;
+using MudBlazor.Services;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Core.AcidTests;
 using CenitStoryTeller.Data;
@@ -14,6 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddMudServices();
 
 builder.Services.AddNovelaLlm(builder.Configuration);
 builder.Services.AddNovelaAcidTests();

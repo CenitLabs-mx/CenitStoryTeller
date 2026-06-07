@@ -1,0 +1,20 @@
+@page "/register-confirmation"
+@layout AuthLayout
+
+<PageTitle>Revisa tu email · CenitStoryTeller</PageTitle>
+
+<MudCard Elevation="4" Class="pa-6" Style="max-width: 460px; margin: 4rem auto;">
+    <MudText Typo="Typo.h5" Class="mb-3">Casi listo</MudText>
+    <MudText>
+        Te enviamos un enlace de confirmación a <strong>@Email</strong>.
+        Haz clic en él para activar tu cuenta y poder iniciar sesión.
+    </MudText>
+    <MudText Class="mt-3" Color="Color.Secondary" Typo="Typo.body2">
+        Si no lo recibes en unos minutos, revisa tu carpeta de spam. En desarrollo,
+        el email se imprime en la consola del servidor.
+    </MudText>
+</MudCard>
+
+@code {
+    [SupplyParameterFromQuery] private string? Email { get; set; }
+}

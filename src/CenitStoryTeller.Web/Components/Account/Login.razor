@@ -1,0 +1,77 @@
+@page "/login"
+@layout AuthLayout
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using CenitStoryTeller.Data.Entities
+@inject SignInManager<Usuario> SignInMgr
+@inject NavigationManager Nav
+
+<PageTitle>Iniciar sesión · CenitStoryTeller</PageTitle>
+
+<MudCard Elevation="4" Class="pa-6" Style="max-width: 420px; margin: 4rem auto;">
+    <MudText Typo="Typo.h5" Class="mb-4">Iniciar sesión</MudText>
+
+    @if (!string.IsNullOrEmpty(_mensajeError))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">@_mensajeError</MudAlert>
+    }
+
+    <EditForm Model="Input" method="post" OnValidSubmit="EntrarAsync" FormName="login">
+        <DataAnnotationsValidator />
+
+        <MudTextField @bind-Value="Input.Email" Label="Email" InputType="InputType.Email"
+                      Required="true" Class="mb-3" Variant="Variant.Outlined" />
+        <ValidationMessage For="() => Input.Email" class="text-danger" />
+
+        <MudTextField @bind-Value="Input.Password" Label="Contraseña" InputType="InputType.Password"
+                      Required="true" Class="mb-3" Variant="Variant.Outlined" />
+        <ValidationMessage For="() => Input.Password" class="text-danger" />
+
+        <MudCheckBox @bind-Value="Input.Recordarme" Label="Recordarme" Class="mb-3" />
+
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
+            Entrar
+        </MudButton>
+    </EditForm>
+
+    <MudDivider Class="my-4" />
+
+    <MudStack Spacing="1">
+        <MudLink Href="/register">¿No tienes cuenta? Regístrate</MudLink>
+        <MudLink Href="/forgot-password">Olvidé mi contraseña</MudLink>
+    </MudStack>
+</MudCard>
+
+@code {
+    [SupplyParameterFromForm] private InputModel Input { get; set; } = new();
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    private string? _mensajeError;
+
+    private async Task EntrarAsync()
+    {
+        var resultado = await SignInMgr.PasswordSignInAsync(
+            Input.Email, Input.Password, Input.Recordarme, lockoutOnFailure: false);
+
+        if (resultado.Succeeded)
+        {
+            var destino = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+            Nav.NavigateTo(destino);
+            return;
+        }
+
+        _mensajeError = resultado.IsNotAllowed
+            ? "Tu email aún no está confirmado. Revisa tu bandeja de entrada."
+            : resultado.IsLockedOut
+                ? "Cuenta bloqueada temporalmente. Inténtalo más tarde."
+                : "Email o contraseña incorrectos.";
+    }
+
+    public sealed class InputModel
+    {
+        [Required, EmailAddress] public string Email { get; set; } = "";
+        [Required, DataType(DataType.Password)] public string Password { get; set; } = "";
+        public bool Recordarme { get; set; }
+    }
+}

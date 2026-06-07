@@ -1,0 +1,20 @@
+@page "/logout"
+@layout AuthLayout
+@using Microsoft.AspNetCore.Identity
+@using CenitStoryTeller.Data.Entities
+@inject SignInManager<Usuario> SignInMgr
+@inject NavigationManager Nav
+
+<MudCard Elevation="4" Class="pa-6" Style="max-width: 420px; margin: 4rem auto;">
+    <MudText>Cerrando sesión...</MudText>
+</MudCard>
+
+@code {
+    // El logout requiere un POST con antiforgery para no ser CSRF-able. Esta página
+    // muestra un form auto-submit que apunta al endpoint /logout-post.
+    protected override async Task OnInitializedAsync()
+    {
+        await SignInMgr.SignOutAsync();
+        Nav.NavigateTo("/login");
+    }
+}
