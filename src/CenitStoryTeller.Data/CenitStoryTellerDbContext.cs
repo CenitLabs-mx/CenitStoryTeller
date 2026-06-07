@@ -6,11 +6,11 @@ using CenitStoryTeller.Data.Entities;
 
 namespace CenitStoryTeller.Data;
 
-public sealed class NovelaDbContext : IdentityDbContext<Usuario, Microsoft.AspNetCore.Identity.IdentityRole<Guid>, Guid>
+public sealed class CenitStoryTellerDbContext : IdentityDbContext<Usuario, Microsoft.AspNetCore.Identity.IdentityRole<Guid>, Guid>
 {
     private readonly ICurrentUser _currentUser;
 
-    public NovelaDbContext(DbContextOptions<NovelaDbContext> options, ICurrentUser? currentUser = null)
+    public CenitStoryTellerDbContext(DbContextOptions<CenitStoryTellerDbContext> options, ICurrentUser? currentUser = null)
         : base(options)
     {
         _currentUser = currentUser ?? new AnonymousCurrentUser();

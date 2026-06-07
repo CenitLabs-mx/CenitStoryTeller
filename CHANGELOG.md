@@ -16,7 +16,7 @@ isolation).
 
 ### Added — Auth and multi-tenancy
 - ASP.NET Identity with email confirmation and password reset.
-  Identity-aware `NovelaDbContext` (`IdentityDbContext<Usuario,...>`).
+  Identity-aware `CenitStoryTellerDbContext` (`IdentityDbContext<Usuario,...>`).
 - `Obra.UsuarioId` nullable for tenant ownership; `NULL` = global demo.
   East Lynne stays demo-visible to everyone but read-only.
 - `ICurrentUser` accessor (`HttpCurrentUser` in Web, `AnonymousCurrentUser`

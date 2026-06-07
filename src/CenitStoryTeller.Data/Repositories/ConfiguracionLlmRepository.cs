@@ -15,8 +15,8 @@ public interface IConfiguracionLlmRepository
 
 public sealed class ConfiguracionLlmRepository : IConfiguracionLlmRepository
 {
-    private readonly NovelaDbContext _db;
-    public ConfiguracionLlmRepository(NovelaDbContext db) => _db = db;
+    private readonly CenitStoryTellerDbContext _db;
+    public ConfiguracionLlmRepository(CenitStoryTellerDbContext db) => _db = db;
 
     public Task<ConfiguracionLlm?> ObtenerPorUsuarioAsync(Guid usuarioId, CancellationToken ct = default) =>
         _db.ConfiguracionesLlm.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId, ct);

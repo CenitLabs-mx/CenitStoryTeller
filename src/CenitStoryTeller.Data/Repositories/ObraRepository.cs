@@ -22,9 +22,9 @@ public interface IObraRepository
 
 public sealed class ObraRepository : IObraRepository
 {
-    private readonly NovelaDbContext _db;
+    private readonly CenitStoryTellerDbContext _db;
     private readonly ICurrentUser _currentUser;
-    public ObraRepository(NovelaDbContext db, ICurrentUser currentUser)
+    public ObraRepository(CenitStoryTellerDbContext db, ICurrentUser currentUser)
     {
         _db = db;
         _currentUser = currentUser;

@@ -15,7 +15,7 @@ public static class CorazonDelatorSeeder
 {
     public const string TituloObra = "El corazón delator";
 
-    public static async Task<bool> SeedAsync(NovelaDbContext db, CancellationToken ct = default)
+    public static async Task<bool> SeedAsync(CenitStoryTellerDbContext db, CancellationToken ct = default)
     {
         if (await db.Obras.AnyAsync(o => o.Titulo == TituloObra, ct))
             return false;

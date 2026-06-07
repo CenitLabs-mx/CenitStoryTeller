@@ -25,8 +25,8 @@ public interface ICapituloRepository
 
 public sealed class CapituloRepository : ICapituloRepository
 {
-    private readonly NovelaDbContext _db;
-    public CapituloRepository(NovelaDbContext db) => _db = db;
+    private readonly CenitStoryTellerDbContext _db;
+    public CapituloRepository(CenitStoryTellerDbContext db) => _db = db;
 
     public Task<Capitulo?> GetAsync(Guid id, CancellationToken ct = default) =>
         _db.Capitulos.FirstOrDefaultAsync(c => c.Id == id, ct);

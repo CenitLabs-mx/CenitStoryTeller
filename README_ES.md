@@ -74,7 +74,7 @@ snapshot exacto del canon que vio el agente.
 ```
 
 - **`Core`** — entidades de dominio, abstracción `ILlmClient`, `AcidTest`s.
-- **`Data`** — `NovelaDbContext`, repositorios, `GeneracionService`,
+- **`Data`** — `CenitStoryTellerDbContext`, repositorios, `GeneracionService`,
   `ModernizacionService`, `AcidTestRunner`.
 - **`Web`** — UI Blazor Server sobre .NET 8.
 

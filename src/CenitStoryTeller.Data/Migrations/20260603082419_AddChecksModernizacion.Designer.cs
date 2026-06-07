@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace CenitStoryTeller.Data.Migrations
 {
-    [DbContext(typeof(NovelaDbContext))]
+    [DbContext(typeof(CenitStoryTellerDbContext))]
     [Migration("20260603082419_AddChecksModernizacion")]
     partial class AddChecksModernizacion
     {

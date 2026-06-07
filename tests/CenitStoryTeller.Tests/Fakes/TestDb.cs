@@ -12,9 +12,9 @@ namespace CenitStoryTeller.Tests.Fakes;
 internal sealed class TestDb : IDisposable
 {
     private readonly SqliteConnection _conn;
-    private readonly DbContextOptions<NovelaDbContext> _opts;
+    private readonly DbContextOptions<CenitStoryTellerDbContext> _opts;
 
-    private TestDb(SqliteConnection conn, DbContextOptions<NovelaDbContext> opts)
+    private TestDb(SqliteConnection conn, DbContextOptions<CenitStoryTellerDbContext> opts)
     {
         _conn = conn;
         _opts = opts;
@@ -24,17 +24,17 @@ internal sealed class TestDb : IDisposable
     {
         var conn = new SqliteConnection("DataSource=:memory:");
         conn.Open();
-        var opts = new DbContextOptionsBuilder<NovelaDbContext>().UseSqlite(conn).Options;
+        var opts = new DbContextOptionsBuilder<CenitStoryTellerDbContext>().UseSqlite(conn).Options;
 
-        using (var ctx = new NovelaDbContext(opts))
+        using (var ctx = new CenitStoryTellerDbContext(opts))
             ctx.Database.EnsureCreated();
         return new TestDb(conn, opts);
     }
 
-    public NovelaDbContext NuevoCtx(ICurrentUser? user = null) => new(_opts, user);
+    public CenitStoryTellerDbContext NuevoCtx(ICurrentUser? user = null) => new(_opts, user);
 
     public sealed record Suite(
-        NovelaDbContext Db,
+        CenitStoryTellerDbContext Db,
         IObraRepository Obras,
         ICapituloRepository Capitulos,
         IRegistroPasoRepository Pasos,

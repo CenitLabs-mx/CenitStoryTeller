@@ -6,13 +6,13 @@
 @using CenitStoryTeller.Core.Llm
 @using CenitStoryTeller.Data
 @using CenitStoryTeller.Core.Entities
-@inject NovelaDbContext Db
+@inject CenitStoryTellerDbContext Db
 @inject ILlmClientFactory LlmFactory
 @inject ILlmOptionsAccessor LlmOpts
 @inject IGeneracionService Generacion
 @inject NavigationManager Nav
 
-<PageTitle>Crear Obra Inédita - Novela Engine</PageTitle>
+<PageTitle>Crear Obra Inédita - CenitStoryTeller</PageTitle>
 
 @if (_autoBorrando)
 {

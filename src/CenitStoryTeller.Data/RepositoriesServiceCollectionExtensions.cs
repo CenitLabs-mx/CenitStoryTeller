@@ -7,7 +7,7 @@ namespace CenitStoryTeller.Data;
 
 public static class RepositoriesServiceCollectionExtensions
 {
-    public static IServiceCollection AddNovelaRepositories(this IServiceCollection services)
+    public static IServiceCollection AddCenitStoryTellerRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IObraRepository, ObraRepository>();
@@ -15,7 +15,7 @@ public static class RepositoriesServiceCollectionExtensions
         services.AddScoped<IRegistroPasoRepository, RegistroPasoRepository>();
         services.AddScoped<IConfiguracionLlmRepository, ConfiguracionLlmRepository>();
         // Sobrescribe el accessor por defecto (que mira solo appsettings) con el que
-        // resuelve por usuario. Como AddNovelaLlm corre antes, la última registración gana.
+        // resuelve por usuario. Como AddCenitStoryTellerLlm corre antes, la última registración gana.
         services.AddScoped<ILlmOptionsAccessor, UserLlmOptionsAccessor>();
         services.AddSingleton<IPromptProvider, FilePromptProvider>();
         services.AddScoped<IGeneracionService, GeneracionService>();

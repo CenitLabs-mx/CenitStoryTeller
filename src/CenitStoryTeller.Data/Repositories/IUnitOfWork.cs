@@ -10,7 +10,7 @@ public interface IUnitOfWork
 
 public sealed class UnitOfWork : IUnitOfWork
 {
-    private readonly NovelaDbContext _db;
-    public UnitOfWork(NovelaDbContext db) => _db = db;
+    private readonly CenitStoryTellerDbContext _db;
+    public UnitOfWork(CenitStoryTellerDbContext db) => _db = db;
     public Task<int> SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

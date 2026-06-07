@@ -18,7 +18,7 @@ public class CompendioServiceTests : IDisposable
 
     // Obra con 5 capítulos (Orden 1..5), 5 beats. Cada capítulo apunta a su beat
     // por Orden (sin BeatObjetivoId — el CompendioService no lo necesita).
-    private Guid SeedearObraCon5(Action<NovelaDbContext, Obra>? versiones = null)
+    private Guid SeedearObraCon5(Action<CenitStoryTellerDbContext, Obra>? versiones = null)
     {
         using var seed = _test.NuevoCtx();
         var obra = new Obra { Id = Guid.NewGuid(), Titulo = "T", Intake = IntakeTipo.Idea };

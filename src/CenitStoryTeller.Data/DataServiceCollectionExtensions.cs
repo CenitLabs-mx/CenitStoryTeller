@@ -7,12 +7,12 @@ namespace CenitStoryTeller.Data;
 
 public static class DataServiceCollectionExtensions
 {
-    public static IServiceCollection AddNovelaData(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddCenitStoryTellerData(this IServiceCollection services, IConfiguration config)
     {
         var cs = config.GetConnectionString("Default")
                  ?? throw new InvalidOperationException("Falta ConnectionStrings:Default");
 
-        services.AddDbContext<NovelaDbContext>(o => o.UseNpgsql(cs));
+        services.AddDbContext<CenitStoryTellerDbContext>(o => o.UseNpgsql(cs));
         return services;
     }
 }

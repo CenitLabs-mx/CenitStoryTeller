@@ -10,7 +10,7 @@ namespace CenitStoryTeller.Core.Llm;
 
 public static class LlmServiceCollectionExtensions
 {
-    public static IServiceCollection AddNovelaLlm(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddCenitStoryTellerLlm(this IServiceCollection services, IConfiguration config)
     {
         // LlmOptions desde appsettings sigue siendo el fallback. La capa Data registra
         // un ILlmOptionsAccessor que prefiere la config del usuario; este accessor

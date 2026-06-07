@@ -22,10 +22,10 @@ public interface IBeatService
 
 public sealed class BeatService : IBeatService
 {
-    private readonly NovelaDbContext _db;
+    private readonly CenitStoryTellerDbContext _db;
     private readonly IUnitOfWork _uow;
 
-    public BeatService(NovelaDbContext db, IUnitOfWork uow)
+    public BeatService(CenitStoryTellerDbContext db, IUnitOfWork uow)
     {
         _db = db;
         _uow = uow;

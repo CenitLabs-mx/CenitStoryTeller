@@ -13,9 +13,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-tuPassword}
-      POSTGRES_DB: novela
+      POSTGRES_DB: cenitstoryteller
     volumes:
-      - novela-data:/var/lib/postgresql/data   # contenido privado, fuera del repo
+      - cenitstoryteller-data:/var/lib/postgresql/data   # contenido privado, fuera del repo
 
 volumes:
-  novela-data:
+  cenitstoryteller-data:

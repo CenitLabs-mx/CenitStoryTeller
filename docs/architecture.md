@@ -90,7 +90,7 @@ sequenceDiagram
     participant ModSvc as ModernizacionService
     participant LLM as ILlmClient (per user)
     participant GenSvc as GeneracionService
-    participant DB as NovelaDbContext
+    participant DB as CenitStoryTellerDbContext
 
     User->>UI: Submit form (epoca, registro, …)
     UI->>ModSvc: ModernizarCanonAsync(obraId, params)
@@ -251,7 +251,7 @@ flowchart TD
 
 - `Obra.UsuarioId` is nullable. `NULL` means "demo, read by everyone,
   mutated by nobody".
-- The query filter in `NovelaDbContext.OnModelCreating` combines soft
+- The query filter in `CenitStoryTellerDbContext.OnModelCreating` combines soft
   delete with tenancy: `EliminadaEn == null AND (UsuarioId == null
   OR UsuarioId == CurrentUserId)`.
 - `ObraRepository` auto-stamps `UsuarioId` on `AddAsync` from
@@ -259,7 +259,7 @@ flowchart TD
   call `AssertMutable`, which throws `UnauthorizedAccessException`
   for demos and for obras belonging to someone else.
 - The Identity tables (`AspNetUsers`, etc.) live in the same DbContext;
-  `NovelaDbContext` inherits from `IdentityDbContext<Usuario,
+  `CenitStoryTellerDbContext` inherits from `IdentityDbContext<Usuario,
   IdentityRole<Guid>, Guid>`.
 
 The tenancy tests in

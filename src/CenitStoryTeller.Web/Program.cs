@@ -21,15 +21,15 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddMudServices();
 
 builder.Services.AddMemoryCache();
-builder.Services.AddNovelaLlm(builder.Configuration);
-builder.Services.AddNovelaAcidTests();
-builder.Services.AddNovelaData(builder.Configuration);
-builder.Services.AddNovelaRepositories();
+builder.Services.AddCenitStoryTellerLlm(builder.Configuration);
+builder.Services.AddCenitStoryTellerAcidTests();
+builder.Services.AddCenitStoryTellerData(builder.Configuration);
+builder.Services.AddCenitStoryTellerRepositories();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
-// Identity sobre NovelaDbContext. Reglas de password relajadas en dev — en prod
+// Identity sobre CenitStoryTellerDbContext. Reglas de password relajadas en dev — en prod
 // se endurecen vía configuración. Email confirmation requerido: el flujo de
 // registro envía un link de confirmación antes de habilitar login.
 builder.Services.AddIdentity<Usuario, IdentityRole<Guid>>(o =>
@@ -42,7 +42,7 @@ builder.Services.AddIdentity<Usuario, IdentityRole<Guid>>(o =>
         o.Password.RequiredLength = 8;
         o.User.RequireUniqueEmail = true;
     })
-    .AddEntityFrameworkStores<NovelaDbContext>()
+    .AddEntityFrameworkStores<CenitStoryTellerDbContext>()
     .AddDefaultTokenProviders();
 
 builder.Services.ConfigureApplicationCookie(o =>
@@ -69,7 +69,7 @@ var app = builder.Build();
 if (args.Contains("--migrate"))
 {
     using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<NovelaDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<CenitStoryTellerDbContext>();
     app.Logger.LogInformation("Applying pending migrations...");
     db.Database.Migrate();
     app.Logger.LogInformation("Seeding East Lynne demo (idempotent)...");

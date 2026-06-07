@@ -73,7 +73,7 @@ exact canon snapshot the agent had in context.
 ```
 
 - **`Core`** — domain entities, `ILlmClient` abstraction, `AcidTest`s.
-- **`Data`** — `NovelaDbContext`, repositories, `GeneracionService`,
+- **`Data`** — `CenitStoryTellerDbContext`, repositories, `GeneracionService`,
   `ModernizacionService`, `AcidTestRunner`.
 - **`Web`** — Blazor Server UI on .NET 8.
 

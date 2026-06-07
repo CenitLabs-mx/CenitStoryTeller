@@ -37,7 +37,7 @@ public static class ImagenEndpoints
     // ---- Personaje ----
 
     private static async Task<IResult> ServirImagenPersonaje(
-        Guid id, NovelaDbContext db, CancellationToken ct)
+        Guid id, CenitStoryTellerDbContext db, CancellationToken ct)
     {
         var p = await db.Personajes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (p?.ImagenBytes is null) return Results.NotFound();
@@ -45,7 +45,7 @@ public static class ImagenEndpoints
     }
 
     private static async Task<IResult> SubirImagenPersonaje(
-        Guid id, IFormFile archivo, NovelaDbContext db, CancellationToken ct)
+        Guid id, IFormFile archivo, CenitStoryTellerDbContext db, CancellationToken ct)
     {
         var err = ValidarArchivo(archivo);
         if (err is not null) return Results.BadRequest(err);
@@ -63,7 +63,7 @@ public static class ImagenEndpoints
     }
 
     private static async Task<IResult> BorrarImagenPersonaje(
-        Guid id, NovelaDbContext db, CancellationToken ct)
+        Guid id, CenitStoryTellerDbContext db, CancellationToken ct)
     {
         var p = await db.Personajes.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (p is null) return Results.NotFound();
@@ -76,7 +76,7 @@ public static class ImagenEndpoints
     // ---- Ubicacion ----
 
     private static async Task<IResult> ServirImagenUbicacion(
-        Guid id, NovelaDbContext db, CancellationToken ct)
+        Guid id, CenitStoryTellerDbContext db, CancellationToken ct)
     {
         var u = await db.Ubicaciones.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (u?.ImagenBytes is null) return Results.NotFound();
@@ -84,7 +84,7 @@ public static class ImagenEndpoints
     }
 
     private static async Task<IResult> SubirImagenUbicacion(
-        Guid id, IFormFile archivo, NovelaDbContext db, CancellationToken ct)
+        Guid id, IFormFile archivo, CenitStoryTellerDbContext db, CancellationToken ct)
     {
         var err = ValidarArchivo(archivo);
         if (err is not null) return Results.BadRequest(err);
@@ -101,7 +101,7 @@ public static class ImagenEndpoints
     }
 
     private static async Task<IResult> BorrarImagenUbicacion(
-        Guid id, NovelaDbContext db, CancellationToken ct)
+        Guid id, CenitStoryTellerDbContext db, CancellationToken ct)
     {
         var u = await db.Ubicaciones.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (u is null) return Results.NotFound();

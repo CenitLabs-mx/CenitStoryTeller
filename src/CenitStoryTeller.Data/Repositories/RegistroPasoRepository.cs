@@ -16,8 +16,8 @@ public interface IRegistroPasoRepository
 
 public sealed class RegistroPasoRepository : IRegistroPasoRepository
 {
-    private readonly NovelaDbContext _db;
-    public RegistroPasoRepository(NovelaDbContext db) => _db = db;
+    private readonly CenitStoryTellerDbContext _db;
+    public RegistroPasoRepository(CenitStoryTellerDbContext db) => _db = db;
 
     public async Task AppendAsync(RegistroPaso paso, CancellationToken ct = default) =>
         await _db.RegistrosPaso.AddAsync(paso, ct);
