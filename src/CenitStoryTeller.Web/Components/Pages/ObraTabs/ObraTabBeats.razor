@@ -1,0 +1,239 @@
+@using Microsoft.EntityFrameworkCore
+@using CenitStoryTeller.Data
+@using CenitStoryTeller.Data.Services
+@using CenitStoryTeller.Core.Entities
+@inject NovelaDbContext Db
+@inject IBeatService BeatSvc
+
+@if (Obra is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+    return;
+}
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h6">Estructura (beats)</MudText>
+    <MudButton OnClick="IniciarNuevo" Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Outlined.Timeline">
+        Añadir beat al final
+    </MudButton>
+</MudStack>
+
+@if (Obra.Beats.Count == 0)
+{
+    <MudText Align="Align.Center" Color="Color.Secondary" Class="my-4">
+        <em>Sin beats dramáticos estructurados.</em>
+    </MudText>
+}
+else
+{
+    var orderedBeats = Obra.Beats.OrderBy(x => x.Orden).ToList();
+
+    <MudPaper Elevation="0" Class="pa-2">
+        @for (var i = 0; i < orderedBeats.Count; i++)
+        {
+            var b = orderedBeats[i];
+            var posicionInsercion = b.Orden;
+            var indexCapturado = i;
+
+            <div class="text-center my-1">
+                <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Default"
+                           StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="() => IniciarInsertarEn(posicionInsercion)">
+                    Insertar aquí
+                </MudButton>
+            </div>
+
+            <MudPaper Elevation="1" Class="pa-3 mb-1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                        @b.Orden
+                    </MudChip>
+                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small"
+                                   Disabled="@(indexCapturado == 0)"
+                                   OnClick="() => Mover(b.Id, -1)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small"
+                                   Disabled="@(indexCapturado == orderedBeats.Count - 1)"
+                                   OnClick="() => Mover(b.Id, +1)" />
+                    <div style="flex: 1;">
+                        <MudText Typo="Typo.subtitle2"><b>@b.Titulo</b></MudText>
+                        <MudStack Row="true" Spacing="1" Class="mt-1">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@b.Acto</MudChip>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">@b.Funcion</MudChip>
+                        </MudStack>
+                        @if (!string.IsNullOrWhiteSpace(b.Descripcion))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">@b.Descripcion</MudText>
+                        }
+                    </div>
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                                   OnClick="() => IniciarEditar(b)" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                   OnClick="() => Eliminar(b)" />
+                </MudStack>
+            </MudPaper>
+        }
+
+        <div class="text-center my-1">
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Default"
+                       StartIcon="@Icons.Material.Outlined.Add"
+                       OnClick="() => IniciarInsertarEn(orderedBeats.Count + 1)">
+                Insertar al final
+            </MudButton>
+        </div>
+    </MudPaper>
+}
+
+<MudDialog @bind-Visible="_dialogOpen" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true })">
+    <TitleContent>@_dialogTitle</TitleContent>
+    <DialogContent>
+        @if (_editing is not null)
+        {
+            <MudStack Spacing="3">
+                <MudStack Row="true" Spacing="2">
+                    <MudNumericField T="int" @bind-Value="_editing.Orden" Label="Orden" Style="max-width: 100px;" />
+                    <MudTextField @bind-Value="_editing.Titulo" Label="Título" Required="true" Class="flex-1" />
+                </MudStack>
+                <MudStack Row="true" Spacing="2">
+                    <MudSelect T="Acto" @bind-Value="_editing.Acto" Label="Acto" Class="flex-1">
+                        @foreach (var a in Enum.GetValues<Acto>())
+                        {
+                            <MudSelectItem Value="@a">@a</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect T="FuncionNarrativa" @bind-Value="_editing.Funcion" Label="Función narrativa" Class="flex-1">
+                        @foreach (var f in Enum.GetValues<FuncionNarrativa>())
+                        {
+                            <MudSelectItem Value="@f">@f</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+                <MudTextField @bind-Value="_editing.Descripcion" Label="Descripción / acción del beat" Lines="4" />
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _dialogOpen = false">Cancelar</MudButton>
+        <MudButton OnClick="Guardar" Color="Color.Primary" Variant="Variant.Filled">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public Obra? Obra { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private Beat? _editing;
+    private bool _isNew;
+    private bool _dialogOpen;
+    private string _dialogTitle = "Editar beat";
+
+    // Null = "añadir al final" (path legacy). Tiene valor cuando el guardado
+    // viene de "Insertar aquí" y debe usar BeatService.InsertarEnPosicionAsync.
+    private int? _insertarEnPosicion;
+
+    private void IniciarNuevo()
+    {
+        if (Obra is null) return;
+        _isNew = true;
+        _insertarEnPosicion = null;
+        _dialogTitle = "Añadir beat";
+        _editing = new Beat
+        {
+            ObraId = Obra.Id,
+            Orden = Obra.Beats.Count + 1,
+            Estado = BeatEstado.Pendiente
+        };
+        _dialogOpen = true;
+    }
+
+    private void IniciarInsertarEn(int posicion)
+    {
+        if (Obra is null) return;
+        _isNew = true;
+        _insertarEnPosicion = posicion;
+        _dialogTitle = $"Insertar beat en posición {posicion}";
+        _editing = new Beat
+        {
+            ObraId = Obra.Id,
+            Orden = posicion,
+            Estado = BeatEstado.Pendiente
+        };
+        _dialogOpen = true;
+    }
+
+    private void IniciarEditar(Beat b)
+    {
+        _isNew = false;
+        _insertarEnPosicion = null;
+        _dialogTitle = $"Editar beat {b.Orden}";
+        _editing = new Beat
+        {
+            Id = b.Id, ObraId = b.ObraId, Orden = b.Orden, Titulo = b.Titulo,
+            Acto = b.Acto, Funcion = b.Funcion, Descripcion = b.Descripcion, Estado = b.Estado
+        };
+        _dialogOpen = true;
+    }
+
+    private async Task Guardar()
+    {
+        if (Obra is null || _editing is null || string.IsNullOrWhiteSpace(_editing.Titulo)) return;
+
+        if (_isNew)
+        {
+            if (_insertarEnPosicion is int pos)
+            {
+                await BeatSvc.InsertarEnPosicionAsync(Obra.Id, pos, _editing);
+            }
+            else
+            {
+                await Db.Beats.AddAsync(_editing);
+                await Db.Capitulos.AddAsync(new Capitulo
+                {
+                    ObraId = Obra.Id,
+                    Orden = _editing.Orden,
+                    Titulo = _editing.Titulo,
+                    Estado = CapituloEstado.Borrador
+                });
+                await Db.SaveChangesAsync();
+            }
+        }
+        else
+        {
+            var bDb = await Db.Beats.FirstOrDefaultAsync(x => x.Id == _editing.Id);
+            if (bDb is not null)
+            {
+                bDb.Orden = _editing.Orden;
+                bDb.Titulo = _editing.Titulo;
+                bDb.Acto = _editing.Acto;
+                bDb.Funcion = _editing.Funcion;
+                bDb.Descripcion = _editing.Descripcion;
+            }
+            // Renombrar también el capítulo asociado.
+            var cDb = await Db.Capitulos.FirstOrDefaultAsync(
+                x => x.ObraId == Obra.Id && x.Orden == _editing.Orden);
+            if (cDb is not null) cDb.Titulo = _editing.Titulo;
+            await Db.SaveChangesAsync();
+        }
+
+        _dialogOpen = false;
+        _editing = null;
+        _insertarEnPosicion = null;
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task Mover(Guid beatId, int delta)
+    {
+        await BeatSvc.MoverAsync(beatId, delta);
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task Eliminar(Beat b)
+    {
+        if (Obra is null) return;
+        Db.Beats.Remove(b);
+        var cDb = await Db.Capitulos.FirstOrDefaultAsync(x => x.ObraId == Obra.Id && x.Orden == b.Orden);
+        if (cDb is not null) Db.Capitulos.Remove(cDb);
+        await Db.SaveChangesAsync();
+        await OnChanged.InvokeAsync();
+    }
+}

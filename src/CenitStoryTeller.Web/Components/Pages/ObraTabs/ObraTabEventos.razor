@@ -1,0 +1,43 @@
+@using CenitStoryTeller.Core.Entities
+
+@if (Eventos is null || Eventos.Count == 0)
+{
+    <MudText Align="Align.Center" Color="Color.Secondary" Class="my-4">
+        <em>Sin eventos registrados. Modernizar una obra clásica o crear una obra nueva los genera automáticamente.</em>
+    </MudText>
+    return;
+}
+
+<MudText Typo="Typo.h6" Class="mb-3">Eventos</MudText>
+<MudList T="Evento" Dense="true">
+    @foreach (var ev in Eventos.OrderBy(e => e.Orden))
+    {
+        <MudListItem T="Evento" Value="ev">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudChip T="string" Variant="Variant.Outlined" Size="Size.Small">@ev.Orden</MudChip>
+                <div>
+                    <MudText Typo="Typo.subtitle2">@ev.Titulo</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @ev.Acto · @ev.Tipo
+                        @if (ev.Personajes.Any())
+                        {
+                            <span> · <strong>Personajes:</strong> @string.Join(", ", ev.Personajes.Select(p => p.Nombre))</span>
+                        }
+                        @if (ev.Ubicaciones.Any())
+                        {
+                            <span> · <strong>Lugar:</strong> @string.Join(", ", ev.Ubicaciones.Select(u => u.Nombre))</span>
+                        }
+                    </MudText>
+                    @if (!string.IsNullOrWhiteSpace(ev.CambioConsecuencia))
+                    {
+                        <MudText Typo="Typo.caption">→ @ev.CambioConsecuencia</MudText>
+                    }
+                </div>
+            </MudStack>
+        </MudListItem>
+    }
+</MudList>
+
+@code {
+    [Parameter] public List<Evento>? Eventos { get; set; }
+}

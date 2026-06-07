@@ -50,31 +50,7 @@ else
 
         <MudTabs Outlined="true" Rounded="true" PanelClass="pa-4" Class="mt-4">
             <MudTabPanel Text="@($"Capítulos ({_capitulos.Count})")" Icon="@Icons.Material.Outlined.MenuBook">
-                <div class="tab-content" style="min-height: 200px;">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="h5 fw-bold mb-0">Listado de Capítulos</h3>
-                </div>
-
-                @if (_capitulos.Count == 0)
-                {
-                    <p class="text-center text-muted my-4"><em>Sin capítulos creados aún.</em></p>
-                }
-                else
-                {
-                    <div class="list-group">
-                        @foreach (var c in _capitulos)
-                        {
-                            <a href="/capitulos/@(c.Id)/versiones" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong class="text-primary">@c.Orden. @c.Titulo</strong>
-                                    <span class="text-muted small ms-2">— Estado: @c.Estado</span>
-                                </div>
-                                <span class="btn btn-sm btn-outline-primary py-0">Entrar al Taller</span>
-                            </a>
-                        }
-                    </div>
-                }
-                </div>
+                <ObraTabCapitulos Capitulos="_capitulos" />
             </MudTabPanel>
 
             <MudTabPanel Text="@($"Personajes ({_obra.Personajes.Count})")" Icon="@Icons.Material.Outlined.People">
@@ -86,121 +62,11 @@ else
             </MudTabPanel>
 
             <MudTabPanel Text="@($"Beats ({_obra.Beats.Count})")" Icon="@Icons.Material.Outlined.Timeline">
-                <div class="tab-content" style="min-height: 200px;">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="h5 fw-bold mb-0">Estructura de la Novela (Beats)</h3>
-                    <button class="btn btn-sm btn-primary" @onclick="IniciarNuevoBeat">
-                        <span class="bi bi-graph-up"></span> Añadir Beat
-                    </button>
-                </div>
-
-                @if (_obra.Beats.Count == 0)
-                {
-                    <p class="text-center text-muted my-4"><em>Sin beats dramáticos estructurados.</em></p>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped align-middle small">
-                            <thead>
-                                <tr>
-                                    <th style="width: 80px;">Orden</th>
-                                    <th>Título</th>
-                                    <th>Acto</th>
-                                    <th>Función</th>
-                                    <th>Descripción</th>
-                                    <th class="text-end" style="width: 180px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @{ var orderedBeats = _obra.Beats.OrderBy(x => x.Orden).ToList(); }
-                                @for (var i = 0; i < orderedBeats.Count; i++)
-                                {
-                                    var b = orderedBeats[i];
-                                    var posicionInsercion = b.Orden;
-                                    <tr class="border-bottom-0">
-                                        <td colspan="6" class="p-0 text-center" style="background: transparent;">
-                                            <button class="btn btn-link btn-xs text-muted py-0" style="font-size: 0.7rem;"
-                                                    @onclick="() => IniciarInsertarBeatEn(posicionInsercion)">
-                                                <span class="bi bi-plus-circle"></span> Insertar aquí
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <span class="fw-bold me-1">@b.Orden</span>
-                                            <button class="btn btn-xs btn-outline-secondary py-0 px-1"
-                                                    @onclick="() => MoverBeat(b.Id, -1)"
-                                                    disabled="@(i == 0)" title="Subir">↑</button>
-                                            <button class="btn btn-xs btn-outline-secondary py-0 px-1"
-                                                    @onclick="() => MoverBeat(b.Id, +1)"
-                                                    disabled="@(i == orderedBeats.Count - 1)" title="Bajar">↓</button>
-                                        </td>
-                                        <td><strong>@b.Titulo</strong></td>
-                                        <td><span class="badge bg-light text-dark border">@b.Acto</span></td>
-                                        <td><span class="badge bg-light text-primary border">@b.Funcion</span></td>
-                                        <td class="text-muted">@b.Descripcion</td>
-                                        <td class="text-end">
-                                            <button class="btn btn-xs btn-outline-primary py-0 me-1" @onclick="() => IniciarEditarBeat(b)">Editar</button>
-                                            <button class="btn btn-xs btn-outline-danger py-0" @onclick="() => EliminarBeat(b)">Eliminar</button>
-                                        </td>
-                                    </tr>
-                                }
-                                <tr class="border-bottom-0">
-                                    <td colspan="6" class="p-0 text-center" style="background: transparent;">
-                                        <button class="btn btn-link btn-xs text-muted py-0" style="font-size: 0.7rem;"
-                                                @onclick="() => IniciarInsertarBeatEn(orderedBeats.Count + 1)">
-                                            <span class="bi bi-plus-circle"></span> Insertar al final
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                </div>
+                <ObraTabBeats Obra="_obra" OnChanged="RecargarDatos" />
             </MudTabPanel>
 
             <MudTabPanel Text="@($"Eventos ({_obra.Eventos.Count})")" Icon="@Icons.Material.Outlined.Event">
-                <div class="tab-content" style="min-height: 200px;">
-                    @if (_obra.Eventos.Count == 0)
-                    {
-                        <MudText Align="Align.Center" Color="Color.Secondary" Class="my-4">
-                            <em>Sin eventos registrados. Modernizar una obra clásica o crear una obra nueva los genera automáticamente.</em>
-                        </MudText>
-                    }
-                    else
-                    {
-                        <MudList T="Evento" Dense="true">
-                            @foreach (var ev in _obra.Eventos.OrderBy(e => e.Orden))
-                            {
-                                <MudListItem T="Evento" Value="ev">
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                        <MudChip T="string" Variant="Variant.Outlined" Size="Size.Small">@ev.Orden</MudChip>
-                                        <div>
-                                            <MudText Typo="Typo.subtitle2">@ev.Titulo</MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                @ev.Acto · @ev.Tipo
-                                                @if (ev.Personajes.Any())
-                                                {
-                                                    <span> · <strong>Personajes:</strong> @string.Join(", ", ev.Personajes.Select(p => p.Nombre))</span>
-                                                }
-                                                @if (ev.Ubicaciones.Any())
-                                                {
-                                                    <span> · <strong>Lugar:</strong> @string.Join(", ", ev.Ubicaciones.Select(u => u.Nombre))</span>
-                                                }
-                                            </MudText>
-                                            @if (!string.IsNullOrWhiteSpace(ev.CambioConsecuencia))
-                                            {
-                                                <MudText Typo="Typo.caption">→ @ev.CambioConsecuencia</MudText>
-                                            }
-                                        </div>
-                                    </MudStack>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    }
-                </div>
+                <ObraTabEventos Eventos="@(_obra.Eventos.ToList())" />
             </MudTabPanel>
 
             <MudTabPanel Text="Auditoría" Icon="@Icons.Material.Outlined.History">
@@ -217,60 +83,6 @@ else
         </MudTabs>
     </div>
 
-    <!-- MODAL EDITAR / AÑADIR BEAT -->
-    @if (_editingBeat is not null)
-    {
-        <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title fw-bold">@(_isNewItem ? "Añadir Beat" : "Editar Beat")</h5>
-                        <button type="button" class="btn-close" @onclick="() => _editingBeat = null"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-2 mb-2">
-                            <div class="col-4">
-                                <label class="form-label small fw-bold">Orden:</label>
-                                <input type="number" class="form-control form-control-sm" @bind="_editingBeat.Orden" />
-                            </div>
-                            <div class="col-8">
-                                <label class="form-label small fw-bold">Título:</label>
-                                <input class="form-control form-control-sm" @bind="_editingBeat.Titulo" />
-                            </div>
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-6">
-                                <label class="form-label small fw-bold">Acto:</label>
-                                <select class="form-select form-select-sm" @bind="_editingBeat.Acto">
-                                    @foreach (var a in Enum.GetValues<Acto>())
-                                    {
-                                        <option value="@a">@a</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-bold">Función Narrativa:</label>
-                                <select class="form-select form-select-sm" @bind="_editingBeat.Funcion">
-                                    @foreach (var f in Enum.GetValues<FuncionNarrativa>())
-                                    {
-                                        <option value="@f">@f</option>
-                                    }
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold">Descripción / Acción del Beat:</label>
-                            <textarea class="form-control form-control-sm" rows="3" @bind="_editingBeat.Descripcion"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-secondary" @onclick="() => _editingBeat = null">Cancelar</button>
-                        <button type="button" class="btn btn-sm btn-primary" @onclick="GuardarBeat">Guardar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 }
 
 @code {
@@ -278,10 +90,6 @@ else
     private Obra? _obra;
     private List<Capitulo> _capitulos = new();
     private List<BreadcrumbItem> _crumbs = new();
-
-    // Estados de edición
-    private Beat? _editingBeat;
-    private bool _isNewItem = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -299,129 +107,6 @@ else
             new BreadcrumbItem("Inicio", "/"),
             new BreadcrumbItem(_obra?.Titulo ?? "Obra", null, disabled: true)
         };
-    }
-
-    // ----- BEATS -----
-    // Cuando es null, el guardado es un "añadir al final" tradicional. Cuando
-    // tiene valor, el guardado va por BeatService.InsertarEnPosicionAsync con
-    // esa posición.
-    private int? _insertarEnPosicion;
-
-    private void IniciarNuevoBeat()
-    {
-        _isNewItem = true;
-        _insertarEnPosicion = null;
-        _editingBeat = new Beat
-        {
-            ObraId = ObraId,
-            Orden = _obra?.Beats.Count + 1 ?? 1,
-            Estado = BeatEstado.Pendiente
-        };
-    }
-
-    private void IniciarInsertarBeatEn(int posicion)
-    {
-        _isNewItem = true;
-        _insertarEnPosicion = posicion;
-        _editingBeat = new Beat
-        {
-            ObraId = ObraId,
-            Orden = posicion,
-            Estado = BeatEstado.Pendiente
-        };
-    }
-
-    private async Task MoverBeat(Guid beatId, int delta)
-    {
-        await BeatSvc.MoverAsync(beatId, delta);
-        await RecargarDatos();
-    }
-
-    private void IniciarEditarBeat(Beat b)
-    {
-        _isNewItem = false;
-        _editingBeat = new Beat
-        {
-            Id = b.Id,
-            ObraId = b.ObraId,
-            Orden = b.Orden,
-            Titulo = b.Titulo,
-            Acto = b.Acto,
-            Funcion = b.Funcion,
-            Descripcion = b.Descripcion,
-            Estado = b.Estado
-        };
-    }
-
-    private async Task GuardarBeat()
-    {
-        if (_editingBeat is null || string.IsNullOrWhiteSpace(_editingBeat.Titulo)) return;
-
-        if (_isNewItem)
-        {
-            if (_insertarEnPosicion is int pos)
-            {
-                // Inserción en medio: el servicio renumera beats y capítulos
-                // posteriores, y crea el capítulo nuevo en la misma posición.
-                await BeatSvc.InsertarEnPosicionAsync(ObraId, pos, _editingBeat);
-                _editingBeat = null;
-                _insertarEnPosicion = null;
-                await RecargarDatos();
-                return;
-            }
-
-            _editingBeat.Id = Guid.NewGuid();
-            await Db.Beats.AddAsync(_editingBeat);
-
-            // Crear automáticamente el marcador de capítulo para el nuevo beat
-            await Db.Capitulos.AddAsync(new Capitulo
-            {
-                Id = Guid.NewGuid(),
-                ObraId = ObraId,
-                Orden = _editingBeat.Orden,
-                Titulo = _editingBeat.Titulo,
-                Estado = CapituloEstado.Borrador
-            });
-        }
-        else
-        {
-            var bDb = await Db.Beats.FirstOrDefaultAsync(x => x.Id == _editingBeat.Id);
-            if (bDb is not null)
-            {
-                bDb.Orden = _editingBeat.Orden;
-                bDb.Titulo = _editingBeat.Titulo;
-                bDb.Acto = _editingBeat.Acto;
-                bDb.Funcion = _editingBeat.Funcion;
-                bDb.Descripcion = _editingBeat.Descripcion;
-            }
-
-            // Actualizar también el título del capítulo correspondiente si existe
-            var cDb = await Db.Capitulos.FirstOrDefaultAsync(x => x.ObraId == ObraId && x.Orden == _editingBeat.Orden);
-            if (cDb is not null)
-            {
-                cDb.Titulo = _editingBeat.Titulo;
-            }
-        }
-
-        await Db.SaveChangesAsync();
-        _editingBeat = null;
-        await RecargarDatos();
-    }
-
-    private async Task EliminarBeat(Beat b)
-    {
-        // Remover beat
-        Db.Beats.Remove(b);
-
-        // Remover capítulo asociado
-        var cDb = await Db.Capitulos.FirstOrDefaultAsync(x => x.ObraId == ObraId && x.Orden == b.Orden);
-        if (cDb is not null)
-        {
-            Db.Capitulos.Remove(cDb);
-        }
-
-        await Db.SaveChangesAsync();
-        await RecargarDatos();
     }
 
 }
