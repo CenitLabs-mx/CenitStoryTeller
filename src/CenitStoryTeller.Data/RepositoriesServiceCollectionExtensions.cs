@@ -21,6 +21,7 @@ public static class RepositoriesServiceCollectionExtensions
         services.AddScoped<IGeneracionService, GeneracionService>();
         services.AddScoped<IModernizacionService, ModernizacionService>();
         services.AddScoped<ICompendioService, CompendioService>();
+        services.AddScoped<IBeatService, BeatService>();
         return services;
     }
 }
