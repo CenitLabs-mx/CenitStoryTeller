@@ -1,6 +1,7 @@
 using CenitStoryTeller.Web;
 using CenitStoryTeller.Web.Components;
 using CenitStoryTeller.Web.Email;
+using CenitStoryTeller.Web.Endpoints;
 using MudBlazor.Services;
 using CenitStoryTeller.Core.Llm;
 using CenitStoryTeller.Core.AcidTests;
@@ -92,6 +93,8 @@ app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapImagenEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

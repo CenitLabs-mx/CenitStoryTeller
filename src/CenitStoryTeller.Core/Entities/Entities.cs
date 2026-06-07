@@ -57,6 +57,11 @@ public class Personaje
     public EstadoVital EstadoVital { get; set; }
     public CanonNivel Canon { get; set; }
     public Guid ObraId { get; set; }
+
+    // Imagen opcional subida por el usuario. bytea en Postgres. Sin servicio de
+    // resize todavía — el límite se aplica en el endpoint de upload (ver 6.8.2).
+    public byte[]? ImagenBytes { get; set; }
+    public string? ImagenContentType { get; set; }
 }
 
 public class Ubicacion
@@ -68,6 +73,9 @@ public class Ubicacion
     public string? EstadoActual { get; set; }
     public CanonNivel Canon { get; set; }
     public Guid ObraId { get; set; }
+
+    public byte[]? ImagenBytes { get; set; }
+    public string? ImagenContentType { get; set; }
 }
 
 public class Beat
