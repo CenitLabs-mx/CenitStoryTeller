@@ -3,18 +3,18 @@
 @attribute [Authorize]
 @inject IObraRepository Obras
 
-<PageTitle>Novela Engine</PageTitle>
+<PageTitle>CenitStoryTeller</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="display-6 fw-bold mb-0">Novela Engine</h1>
-    <a href="/obras/nueva" class="btn btn-primary">
-        <span class="bi bi-plus-circle" aria-hidden="true"></span> Nueva Obra
-    </a>
-</div>
-
-<p class="text-muted mb-4">
-    Taller de obras literarias con canon inteligente y Prueba del Ácido.
-</p>
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+    <MudText Typo="Typo.h4">Mis obras</MudText>
+    <MudButton Href="/obras/nueva" Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.AddCircle">
+        Nueva obra
+    </MudButton>
+</MudStack>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Taller de obras con canon coherente y Prueba del Ácido.
+</MudText>
 
 @if (_obras is null)
 {
