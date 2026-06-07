@@ -93,10 +93,14 @@ cp .env.example .env        # fill in Llm__ApiKey
 docker compose up --build
 ```
 
-App on http://localhost:8080. The included **East Lynne** demo
-(Ellen Wood, 1861 — public domain) loads automatically: full canon
-plus five sample chapters modernized to a YA / Wattpad register, so
-you can see every workflow end-to-end without writing anything yourself.
+App on http://localhost:8080. Two public-domain demos load automatically
+so you can poke at every workflow without writing prose yourself:
+
+- **East Lynne** (Ellen Wood, 1861) — a long, serialized melodrama
+  modernized to a YA / Wattpad register. Big cast, many chapters.
+- **El corazón delator** (Edgar Allan Poe, 1843) — a short horror
+  monologue. Three characters, two locations, nine beats. A different
+  shape entirely; shows the framework isn't tuned to one genre.
 
 ### Database migrations
 

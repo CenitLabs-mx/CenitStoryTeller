@@ -74,6 +74,8 @@ if (args.Contains("--migrate"))
     db.Database.Migrate();
     app.Logger.LogInformation("Seeding East Lynne demo (idempotent)...");
     await EastLynneSeeder.SeedAsync(db);
+    app.Logger.LogInformation("Seeding El corazón delator demo (idempotent)...");
+    await CorazonDelatorSeeder.SeedAsync(db);
     app.Logger.LogInformation("Migrate + seed done. Exiting.");
     return;
 }
